@@ -1,7 +1,14 @@
 from pathlib import Path
 import argparse
 
-EXCLUDED_DIRS = {".git", "gradle", ".gradle", "node_modules", "build", "target", "out", "dist", "venv", "__pycache__", "dist-electron", "dist-electron-builder", "dist-electron-builder-mac", "dist-electron-builder-win", "dist-electron-builder-linux", "obj", "bin", "logs", "tmp", "temp", "cache", "caches", "vendor"}
+EXCLUDED_DIRS = {".git", "gradle", ".gradle", 
+                 "node_modules", "build", "target", "out", 
+                 "dist", "venv", "__pycache__", "dist-electron",
+                   "dist-electron-builder", "dist-electron-builder-mac", 
+                   "dist-electron-builder-win", "dist-electron-builder-linux", 
+                   "obj", "bin", "logs", "tmp", "temp", "cache", "caches", 
+                   "vendor", "build", "build-resources", "dist-deploy", "dist-electron",
+                   "dist-release", "dist-renderer", "dist-self-update", "dist-updater", "dist-web", "dist-webapp", "dist-webapp-builder",}
 # Расширения файлов, содержимое которых нужно записывать
 CONTENT_EXTENSIONS = {".js", ".yml", ".yaml", ".json", ".xml", ".properties", ".cs", ".csproj", ".html", ".css", ".vue"}
 

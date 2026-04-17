@@ -300,14 +300,14 @@ function registerIpcHandlers() {
   ipcMain.handle('desktop:check-shell-updates', async () => {
     return {
       ok: true,
-      message: 'Проверка обновления оболочки пока не подключена в Electron bridge.'
+      message: 'Проверка обновлений оболочки пока недоступна в текущей версии лаунчера.'
     }
   })
 
   ipcMain.handle('desktop:download-install-shell-update', async () => {
     return {
       ok: false,
-      message: 'Установка обновления оболочки пока не подключена в Electron bridge.'
+      message: 'Установка обновлений оболочки пока недоступна в текущей версии лаунчера.'
     }
   })
 }
