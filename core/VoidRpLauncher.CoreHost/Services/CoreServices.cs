@@ -16,12 +16,23 @@ namespace VoidRpLauncher.CoreHost.Services;
 public sealed class LauncherPlatformService
 {
     public LauncherPlatformInfo Current { get; } = Detect();
+
     private static LauncherPlatformInfo Detect()
     {
         if (OperatingSystem.IsWindows())
         {
-            return new LauncherPlatformInfo { Rid = "win-x64", DisplayName = "Windows x64", IsWindows = true, IsMacOs = false, LauncherExecutableFileName = "VoidRpLauncher.App.exe", UpdaterExecutableFileName = "VoidRpLauncher.Updater.exe", RuntimeManifestFileName = "runtime-manifest.win-x64.json" };
+            return new LauncherPlatformInfo
+            {
+                Rid = "win-x64",
+                DisplayName = "Windows x64",
+                IsWindows = true,
+                IsMacOs = false,
+                LauncherExecutableFileName = "VoidRpLauncher.exe",
+                UpdaterExecutableFileName = "VoidRpLauncher.Updater.exe",
+                RuntimeManifestFileName = "runtime-manifest.win-x64.json"
+            };
         }
+
         if (OperatingSystem.IsMacOS())
         {
             var rid = RuntimeInformation.ProcessArchitecture switch
@@ -30,8 +41,19 @@ public sealed class LauncherPlatformService
                 Architecture.X64 => "osx-x64",
                 _ => throw new PlatformNotSupportedException($"macOS architecture '{RuntimeInformation.ProcessArchitecture}' is not supported.")
             };
-            return new LauncherPlatformInfo { Rid = rid, DisplayName = rid == "osx-arm64" ? "macOS Apple Silicon" : "macOS Intel", IsWindows = false, IsMacOs = true, LauncherExecutableFileName = "VoidRpLauncher.App", UpdaterExecutableFileName = "VoidRpLauncher.Updater", RuntimeManifestFileName = $"runtime-manifest.{rid}.json" };
+
+            return new LauncherPlatformInfo
+            {
+                Rid = rid,
+                DisplayName = rid == "osx-arm64" ? "macOS Apple Silicon" : "macOS Intel",
+                IsWindows = false,
+                IsMacOs = true,
+                LauncherExecutableFileName = "VoidRpLauncher.App",
+                UpdaterExecutableFileName = "VoidRpLauncher.Updater",
+                RuntimeManifestFileName = $"runtime-manifest.{rid}.json"
+            };
         }
+
         throw new PlatformNotSupportedException("Only Windows x64 and macOS are supported.");
     }
 }
@@ -50,6 +72,7 @@ public sealed class LauncherPlatformInfo
 public sealed class LauncherPathsService
 {
     private readonly LauncherPlatformService _platformService;
+
     public LauncherPlatformInfo Platform => _platformService.Current;
     public string BaseDirectory { get; }
     public string LauncherInstallDirectory { get; }
@@ -83,8 +106,16 @@ public sealed class LauncherPathsService
 
     public string GetCurrentExecutablePath()
     {
+        var portableExecutable = Environment.GetEnvironmentVariable("PORTABLE_EXECUTABLE_FILE");
+        if (!string.IsNullOrWhiteSpace(portableExecutable) && File.Exists(portableExecutable))
+        {
+            return portableExecutable;
+        }
+
         var executablePath = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(executablePath)) throw new InvalidOperationException("Could not resolve current launcher executable path.");
+        if (string.IsNullOrWhiteSpace(executablePath))
+            throw new InvalidOperationException("Could not resolve current launcher executable path.");
+
         return executablePath;
     }
 
@@ -94,7 +125,9 @@ public sealed class LauncherPathsService
     {
         var executablePath = GetCurrentExecutablePath();
         var bundlePath = TryResolveAppBundlePath(executablePath);
-        if (string.IsNullOrWhiteSpace(bundlePath)) throw new InvalidOperationException("Current macOS launcher is not running from a .app bundle.");
+        if (string.IsNullOrWhiteSpace(bundlePath))
+            throw new InvalidOperationException("Current macOS launcher is not running from a .app bundle.");
+
         return bundlePath;
     }
 
@@ -104,36 +137,45 @@ public sealed class LauncherPathsService
         var consolePath = Path.Combine(JavaDirectory, "bin", Platform.IsWindows ? "java.exe" : "java");
         if (File.Exists(guiPath)) return guiPath;
         if (File.Exists(consolePath)) return consolePath;
+
         if (Directory.Exists(JavaDirectory))
         {
             var f1 = Directory.EnumerateFiles(JavaDirectory, Platform.IsWindows ? "javaw.exe" : "java", SearchOption.AllDirectories).FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(f1)) return f1;
+
             var f2 = Directory.EnumerateFiles(JavaDirectory, Platform.IsWindows ? "java.exe" : "java", SearchOption.AllDirectories).FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(f2)) return f2;
         }
+
         throw new FileNotFoundException($"Java executable not found inside '{JavaDirectory}'.");
     }
 
     private string ResolveLauncherInstallDirectory()
     {
-        var executablePath = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(executablePath)) return AppContext.BaseDirectory;
+        var executablePath = GetCurrentExecutablePath();
+
         if (Platform.IsMacOs)
         {
             var bundlePath = TryResolveAppBundlePath(executablePath);
-            if (!string.IsNullOrWhiteSpace(bundlePath)) return Path.GetDirectoryName(bundlePath) ?? AppContext.BaseDirectory;
+            if (!string.IsNullOrWhiteSpace(bundlePath))
+                return Path.GetDirectoryName(bundlePath) ?? AppContext.BaseDirectory;
         }
+
         return Path.GetDirectoryName(executablePath) ?? AppContext.BaseDirectory;
     }
 
     private static string? TryResolveAppBundlePath(string executablePath)
     {
         var current = Path.GetDirectoryName(executablePath);
+
         while (!string.IsNullOrWhiteSpace(current))
         {
-            if (current.EndsWith(".app", StringComparison.OrdinalIgnoreCase)) return current;
+            if (current.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+                return current;
+
             current = Directory.GetParent(current)?.FullName;
         }
+
         return null;
     }
 }
@@ -143,6 +185,7 @@ public sealed class HashService
     public string ComputeSha256(string filePath)
     {
         Exception? lastError = null;
+
         for (var attempt = 1; attempt <= 5; attempt++)
         {
             try
@@ -157,6 +200,7 @@ public sealed class HashService
                 Thread.Sleep(100);
             }
         }
+
         throw new IOException($"Unable to read file for SHA-256: {filePath}", lastError);
     }
 }
@@ -165,7 +209,9 @@ public sealed class LauncherSettingsService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly LauncherPathsService _pathsService;
+
     public event EventHandler? SettingsChanged;
+
     public LauncherSettingsService(LauncherPathsService pathsService) => _pathsService = pathsService;
 
     public LauncherUserSettings Load()
@@ -173,12 +219,14 @@ public sealed class LauncherSettingsService
         try
         {
             _pathsService.EnsureBaseDirectories();
+
             if (!File.Exists(_pathsService.SettingsFilePath))
             {
                 var defaults = new LauncherUserSettings();
                 Save(defaults);
                 return defaults;
             }
+
             var json = File.ReadAllText(_pathsService.SettingsFilePath);
             var settings = JsonSerializer.Deserialize<LauncherUserSettings>(json) ?? new LauncherUserSettings();
             settings.MaxRamMb = NormalizeMemory(settings.MaxRamMb);
@@ -213,14 +261,20 @@ public sealed class ManifestService
     private static readonly HttpClient HttpClient = new();
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { PropertyNameCaseInsensitive = true };
     private readonly DiagnosticsService _diagnostics;
+
     public ManifestService(DiagnosticsService diagnostics) => _diagnostics = diagnostics;
 
     public async Task<LauncherManifest> LoadAsync(string manifestUrl, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(manifestUrl)) throw new ArgumentException("Manifest URL is empty.", nameof(manifestUrl));
+        if (string.IsNullOrWhiteSpace(manifestUrl))
+            throw new ArgumentException("Manifest URL is empty.", nameof(manifestUrl));
+
         _diagnostics.Info("Manifest", $"Loading pack manifest: {manifestUrl}");
         var manifest = await HttpClient.GetFromJsonAsync<LauncherManifest>(AddCacheBuster(manifestUrl), JsonOptions, cancellationToken);
-        if (manifest is null) throw new InvalidOperationException("Manifest is empty or could not be parsed.");
+
+        if (manifest is null)
+            throw new InvalidOperationException("Manifest is empty or could not be parsed.");
+
         _diagnostics.Info("Manifest", $"Manifest loaded: {manifest.PackName} {manifest.PackVersion}");
         return manifest;
     }
@@ -236,6 +290,7 @@ public sealed class FileSyncService
 {
     private static readonly HttpClient HttpClient = new();
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     private readonly LauncherPathsService _pathsService;
     private readonly HashService _hashService;
     private readonly DiagnosticsService _diagnostics;
@@ -254,6 +309,7 @@ public sealed class FileSyncService
     {
         if (manifest is null) throw new ArgumentNullException(nameof(manifest));
         if (string.IsNullOrWhiteSpace(syncKey)) throw new ArgumentException("Sync key is empty.", nameof(syncKey));
+
         _pathsService.EnsureBaseDirectories();
 
         var normalizedSyncKey = SanitizeFileName(syncKey);
@@ -278,11 +334,24 @@ public sealed class FileSyncService
             var entry = orderedFiles[index];
             var relativePath = NormalizeRelativePath(entry.Path);
             if (string.IsNullOrWhiteSpace(relativePath)) continue;
+
             var localPath = Path.Combine(_pathsService.GameDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
             var localDirectory = Path.GetDirectoryName(localPath);
-            if (!string.IsNullOrWhiteSpace(localDirectory)) Directory.CreateDirectory(localDirectory);
+            if (!string.IsNullOrWhiteSpace(localDirectory))
+                Directory.CreateDirectory(localDirectory);
 
-            progress?.Report(new SyncProgressInfo { Stage = "Проверяем файл", CurrentFile = relativePath, ProcessedFiles = index, TotalFiles = orderedFiles.Count, Percent = CalculateSyncPercent(index, orderedFiles.Count, 0), DetailMessage = "Проверяем наличие, размер и SHA-256...", LocalPath = localPath, SourceUrl = entry.Url });
+            progress?.Report(new SyncProgressInfo
+            {
+                Stage = "Проверяем файл",
+                CurrentFile = relativePath,
+                ProcessedFiles = index,
+                TotalFiles = orderedFiles.Count,
+                Percent = CalculateSyncPercent(index, orderedFiles.Count, 0),
+                DetailMessage = "Проверяем наличие, размер и SHA-256...",
+                LocalPath = localPath,
+                SourceUrl = entry.Url
+            });
+
             var needsDownload = NeedsDownload(entry, localPath);
             if (needsDownload)
             {
@@ -295,7 +364,19 @@ public sealed class FileSyncService
                 await logWriter.WriteLineAsync($"[OK] {relativePath}");
             }
 
-            progress?.Report(new SyncProgressInfo { Stage = "Файл готов", CurrentFile = relativePath, ProcessedFiles = index + 1, TotalFiles = orderedFiles.Count, Percent = orderedFiles.Count == 0 ? 85 : ((double)(index + 1) / orderedFiles.Count) * 85.0, DetailMessage = "Файл актуален и готов к использованию.", LocalPath = localPath, SourceUrl = entry.Url, CurrentFileBytesDownloaded = entry.Size, CurrentFileBytesTotal = entry.Size });
+            progress?.Report(new SyncProgressInfo
+            {
+                Stage = "Файл готов",
+                CurrentFile = relativePath,
+                ProcessedFiles = index + 1,
+                TotalFiles = orderedFiles.Count,
+                Percent = orderedFiles.Count == 0 ? 85 : ((double)(index + 1) / orderedFiles.Count) * 85.0,
+                DetailMessage = "Файл актуален и готов к использованию.",
+                LocalPath = localPath,
+                SourceUrl = entry.Url,
+                CurrentFileBytesDownloaded = entry.Size,
+                CurrentFileBytesTotal = entry.Size
+            });
         }
 
         var staleFiles = previousState.Files.Except(currentManifestPaths, StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
@@ -304,11 +385,40 @@ public sealed class FileSyncService
             cancellationToken.ThrowIfCancellationRequested();
             var relativePath = NormalizeRelativePath(staleFiles[index]);
             var fullPath = Path.Combine(_pathsService.GameDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
-            progress?.Report(new SyncProgressInfo { Stage = "Чистим устаревшие файлы", CurrentFile = relativePath, ProcessedFiles = index, TotalFiles = staleFiles.Count, Percent = staleFiles.Count == 0 ? 100 : 85.0 + (((double)index / staleFiles.Count) * 15.0), DetailMessage = "Проверяем и удаляем устаревший managed-файл...", LocalPath = fullPath });
-            if (IsProtectedFromDeletion(relativePath)) { await logWriter.WriteLineAsync($"[SKIP-PROTECTED] {relativePath}"); continue; }
-            if (!File.Exists(fullPath)) { await logWriter.WriteLineAsync($"[MISSING-ALREADY] {relativePath}"); continue; }
-            try { File.Delete(fullPath); DeleteEmptyParentDirectories(fullPath, _pathsService.GameDirectory); await logWriter.WriteLineAsync($"[DELETE] {relativePath}"); }
-            catch (Exception ex) { await logWriter.WriteLineAsync($"[DELETE-FAILED] {relativePath} :: {ex.Message}"); }
+
+            progress?.Report(new SyncProgressInfo
+            {
+                Stage = "Чистим устаревшие файлы",
+                CurrentFile = relativePath,
+                ProcessedFiles = index,
+                TotalFiles = staleFiles.Count,
+                Percent = staleFiles.Count == 0 ? 100 : 85.0 + (((double)index / staleFiles.Count) * 15.0),
+                DetailMessage = "Проверяем и удаляем устаревший managed-файл...",
+                LocalPath = fullPath
+            });
+
+            if (IsProtectedFromDeletion(relativePath))
+            {
+                await logWriter.WriteLineAsync($"[SKIP-PROTECTED] {relativePath}");
+                continue;
+            }
+
+            if (!File.Exists(fullPath))
+            {
+                await logWriter.WriteLineAsync($"[MISSING-ALREADY] {relativePath}");
+                continue;
+            }
+
+            try
+            {
+                File.Delete(fullPath);
+                DeleteEmptyParentDirectories(fullPath, _pathsService.GameDirectory);
+                await logWriter.WriteLineAsync($"[DELETE] {relativePath}");
+            }
+            catch (Exception ex)
+            {
+                await logWriter.WriteLineAsync($"[DELETE-FAILED] {relativePath} :: {ex.Message}");
+            }
         }
 
         await SaveStateAsync(stateFilePath, new SyncState { Files = currentManifestPaths.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList() }, cancellationToken);
@@ -319,8 +429,10 @@ public sealed class FileSyncService
     private bool NeedsDownload(LauncherManifestFile entry, string localPath)
     {
         if (!File.Exists(localPath)) return true;
+
         var fileInfo = new FileInfo(localPath);
         if (fileInfo.Length != entry.Size) return true;
+
         return !_hashService.ComputeSha256(localPath).Equals(entry.Sha256, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -328,35 +440,61 @@ public sealed class FileSyncService
     {
         var tempPath = localPath + ".download";
         if (File.Exists(tempPath)) File.Delete(tempPath);
+
         try
         {
             using var response = await HttpClient.GetAsync(entry.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
+
             var totalBytes = response.Content.Headers.ContentLength > 0 ? response.Content.Headers.ContentLength.Value : entry.Size;
+
             await using (var sourceStream = await response.Content.ReadAsStreamAsync(cancellationToken))
             await using (var targetStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 var buffer = new byte[1024 * 64];
                 long downloadedBytes = 0;
+
                 while (true)
                 {
                     var read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
                     if (read <= 0) break;
+
                     await targetStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
                     downloadedBytes += read;
+
                     var ratio = totalBytes > 0 ? Math.Min(1.0, (double)downloadedBytes / totalBytes) : 0;
-                    progress?.Report(new SyncProgressInfo { Stage = "Скачиваем файл", CurrentFile = relativePath, ProcessedFiles = fileIndex, TotalFiles = totalFiles, Percent = CalculateSyncPercent(fileIndex, totalFiles, ratio), DetailMessage = totalBytes > 0 ? $"Скачано {FormatBytes(downloadedBytes)} из {FormatBytes(totalBytes)}" : $"Скачано {FormatBytes(downloadedBytes)}", LocalPath = localPath, SourceUrl = entry.Url, CurrentFileBytesDownloaded = downloadedBytes, CurrentFileBytesTotal = totalBytes });
+                    progress?.Report(new SyncProgressInfo
+                    {
+                        Stage = "Скачиваем файл",
+                        CurrentFile = relativePath,
+                        ProcessedFiles = fileIndex,
+                        TotalFiles = totalFiles,
+                        Percent = CalculateSyncPercent(fileIndex, totalFiles, ratio),
+                        DetailMessage = totalBytes > 0 ? $"Скачано {FormatBytes(downloadedBytes)} из {FormatBytes(totalBytes)}" : $"Скачано {FormatBytes(downloadedBytes)}",
+                        LocalPath = localPath,
+                        SourceUrl = entry.Url,
+                        CurrentFileBytesDownloaded = downloadedBytes,
+                        CurrentFileBytesTotal = totalBytes
+                    });
                 }
+
                 await targetStream.FlushAsync(cancellationToken);
             }
+
             var downloadedHash = _hashService.ComputeSha256(tempPath);
-            if (!downloadedHash.Equals(entry.Sha256, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException($"Hash mismatch after download. Expected {entry.Sha256}, got {downloadedHash}.");
-            if (File.Exists(localPath)) File.Delete(localPath);
+            if (!downloadedHash.Equals(entry.Sha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Hash mismatch after download. Expected {entry.Sha256}, got {downloadedHash}.");
+
+            if (File.Exists(localPath))
+                File.Delete(localPath);
+
             File.Move(tempPath, localPath);
         }
         catch
         {
-            if (File.Exists(tempPath)) File.Delete(tempPath);
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+
             throw;
         }
     }
@@ -364,8 +502,15 @@ public sealed class FileSyncService
     private static async Task<SyncState> LoadStateAsync(string stateFilePath, CancellationToken cancellationToken)
     {
         if (!File.Exists(stateFilePath)) return new SyncState();
-        try { return JsonSerializer.Deserialize<SyncState>(await File.ReadAllTextAsync(stateFilePath, cancellationToken)) ?? new SyncState(); }
-        catch { return new SyncState(); }
+
+        try
+        {
+            return JsonSerializer.Deserialize<SyncState>(await File.ReadAllTextAsync(stateFilePath, cancellationToken)) ?? new SyncState();
+        }
+        catch
+        {
+            return new SyncState();
+        }
     }
 
     private static async Task SaveStateAsync(string stateFilePath, SyncState state, CancellationToken cancellationToken)
@@ -395,79 +540,148 @@ public sealed class FileSyncService
         string[] units = ["B", "KB", "MB", "GB", "TB"];
         double value = bytes;
         var unitIndex = 0;
-        while (value >= 1024 && unitIndex < units.Length - 1) { value /= 1024; unitIndex++; }
+
+        while (value >= 1024 && unitIndex < units.Length - 1)
+        {
+            value /= 1024;
+            unitIndex++;
+        }
+
         return $"{value:0.##} {units[unitIndex]}";
     }
 
     private static void DeleteEmptyParentDirectories(string filePath, string stopRoot)
     {
         var current = Path.GetDirectoryName(filePath);
-        while (!string.IsNullOrWhiteSpace(current) && current.StartsWith(stopRoot, StringComparison.OrdinalIgnoreCase) && !string.Equals(current, stopRoot, StringComparison.OrdinalIgnoreCase))
+
+        while (!string.IsNullOrWhiteSpace(current) &&
+               current.StartsWith(stopRoot, StringComparison.OrdinalIgnoreCase) &&
+               !string.Equals(current, stopRoot, StringComparison.OrdinalIgnoreCase))
         {
             if (Directory.Exists(current) && !Directory.EnumerateFileSystemEntries(current).Any())
             {
                 Directory.Delete(current);
                 current = Path.GetDirectoryName(current);
             }
-            else break;
+            else
+            {
+                break;
+            }
         }
     }
 
     private static string SanitizeFileName(string value)
     {
-        foreach (var invalidChar in Path.GetInvalidFileNameChars()) value = value.Replace(invalidChar, '_');
+        foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            value = value.Replace(invalidChar, '_');
+
         return value.Replace(' ', '_');
     }
 
-    private sealed class SyncState { public List<string> Files { get; set; } = new(); }
+    private sealed class SyncState
+    {
+        public List<string> Files { get; set; } = new();
+    }
 }
 
 public sealed class ClientRepairService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly LauncherPathsService _pathsService;
     private readonly DiagnosticsService _diagnostics;
-    public ClientRepairService(LauncherPathsService pathsService, DiagnosticsService diagnostics) { _pathsService = pathsService; _diagnostics = diagnostics; }
+
+    public ClientRepairService(LauncherPathsService pathsService, DiagnosticsService diagnostics)
+    {
+        _pathsService = pathsService;
+        _diagnostics = diagnostics;
+    }
 
     public async Task RepairAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         _pathsService.EnsureBaseDirectories();
+
         progress?.Report("Читаем состояние клиента...");
         _diagnostics.Info("Repair", "Reading launcher state files.");
-        var stateFiles = Directory.Exists(_pathsService.StateDirectory) ? Directory.GetFiles(_pathsService.StateDirectory, "*.json", SearchOption.TopDirectoryOnly) : Array.Empty<string>();
+
+        var stateFiles = Directory.Exists(_pathsService.StateDirectory)
+            ? Directory.GetFiles(_pathsService.StateDirectory, "*.json", SearchOption.TopDirectoryOnly)
+            : Array.Empty<string>();
+
         var managedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var stateFile in stateFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
                 var json = await File.ReadAllTextAsync(stateFile, cancellationToken);
                 var state = JsonSerializer.Deserialize<SyncState>(json, JsonOptions);
                 if (state?.Files is null) continue;
-                foreach (var relativePath in state.Files) if (!string.IsNullOrWhiteSpace(relativePath)) managedPaths.Add(NormalizeRelativePath(relativePath));
+
+                foreach (var relativePath in state.Files)
+                {
+                    if (!string.IsNullOrWhiteSpace(relativePath))
+                        managedPaths.Add(NormalizeRelativePath(relativePath));
+                }
             }
-            catch (Exception ex) { _diagnostics.Warn("Repair", $"Broken state file skipped: {stateFile} :: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                _diagnostics.Warn("Repair", $"Broken state file skipped: {stateFile} :: {ex.Message}");
+            }
         }
+
         progress?.Report("Удаляем managed-файлы...");
+
         foreach (var relativePath in managedPaths.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (IsProtected(relativePath)) continue;
+
+            if (IsProtected(relativePath))
+                continue;
+
             var fullPath = Path.Combine(_pathsService.GameDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(fullPath)) continue;
-            try { File.Delete(fullPath); DeleteEmptyParentDirectories(fullPath, _pathsService.GameDirectory); }
-            catch (Exception ex) { _diagnostics.Warn("Repair", $"Failed deleting managed file: {fullPath} :: {ex.Message}"); }
+            if (!File.Exists(fullPath))
+                continue;
+
+            try
+            {
+                File.Delete(fullPath);
+                DeleteEmptyParentDirectories(fullPath, _pathsService.GameDirectory);
+            }
+            catch (Exception ex)
+            {
+                _diagnostics.Warn("Repair", $"Failed deleting managed file: {fullPath} :: {ex.Message}");
+            }
         }
+
         progress?.Report("Удаляем state-файлы...");
+
         foreach (var stateFile in stateFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            try { File.Delete(stateFile); }
-            catch (Exception ex) { _diagnostics.Warn("Repair", $"Failed deleting state file: {stateFile} :: {ex.Message}"); }
+
+            try
+            {
+                File.Delete(stateFile);
+            }
+            catch (Exception ex)
+            {
+                _diagnostics.Warn("Repair", $"Failed deleting state file: {stateFile} :: {ex.Message}");
+            }
         }
+
         progress?.Report("Чистим временные загрузки...");
+
         if (Directory.Exists(_pathsService.GameDirectory))
-            foreach (var file in Directory.EnumerateFiles(_pathsService.GameDirectory, "*.download", SearchOption.AllDirectories)) try { File.Delete(file); } catch { }
+        {
+            foreach (var file in Directory.EnumerateFiles(_pathsService.GameDirectory, "*.download", SearchOption.AllDirectories))
+            {
+                try { File.Delete(file); } catch { }
+            }
+        }
+
         progress?.Report("Ремонт завершён.");
         _diagnostics.Info("Repair", "Repair finished.");
     }
@@ -481,17 +695,33 @@ public sealed class ClientRepairService
             || normalized.StartsWith("crash-reports/", StringComparison.OrdinalIgnoreCase)
             || normalized.StartsWith("downloads/", StringComparison.OrdinalIgnoreCase);
     }
+
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').Trim('/');
+
     private static void DeleteEmptyParentDirectories(string filePath, string stopRoot)
     {
         var current = Path.GetDirectoryName(filePath);
-        while (!string.IsNullOrWhiteSpace(current) && current.StartsWith(stopRoot, StringComparison.OrdinalIgnoreCase) && !string.Equals(current, stopRoot, StringComparison.OrdinalIgnoreCase))
+
+        while (!string.IsNullOrWhiteSpace(current) &&
+               current.StartsWith(stopRoot, StringComparison.OrdinalIgnoreCase) &&
+               !string.Equals(current, stopRoot, StringComparison.OrdinalIgnoreCase))
         {
-            if (Directory.Exists(current) && !Directory.EnumerateFileSystemEntries(current).Any()) { Directory.Delete(current); current = Path.GetDirectoryName(current); }
-            else break;
+            if (Directory.Exists(current) && !Directory.EnumerateFileSystemEntries(current).Any())
+            {
+                Directory.Delete(current);
+                current = Path.GetDirectoryName(current);
+            }
+            else
+            {
+                break;
+            }
         }
     }
-    private sealed class SyncState { public List<string> Files { get; set; } = new(); }
+
+    private sealed class SyncState
+    {
+        public List<string> Files { get; set; } = new();
+    }
 }
 
 public sealed class LocalMinecraftLaunchService
@@ -557,6 +787,3 @@ public sealed class LocalMinecraftLaunchService
         return process;
     }
 }
-
-
-
