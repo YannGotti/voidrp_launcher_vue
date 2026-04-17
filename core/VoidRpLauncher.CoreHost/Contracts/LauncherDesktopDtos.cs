@@ -15,6 +15,70 @@ public sealed class LauncherLinksDto
     public string VerifyEmailUrl { get; set; } = string.Empty;
 }
 
+public sealed class LauncherDashboardNationDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Tag { get; set; } = string.Empty;
+    public string AccentColor { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string IconUrl { get; set; } = string.Empty;
+    public string IconPreviewUrl { get; set; } = string.Empty;
+    public string BannerUrl { get; set; } = string.Empty;
+    public string BannerPreviewUrl { get; set; } = string.Empty;
+    public string BackgroundUrl { get; set; } = string.Empty;
+    public string BackgroundPreviewUrl { get; set; } = string.Empty;
+    public string AllianceTitle { get; set; } = string.Empty;
+    public string AllianceTag { get; set; } = string.Empty;
+}
+
+public sealed class LauncherDashboardNationStatsDto
+{
+    public double TreasuryBalance { get; set; }
+    public int TerritoryPoints { get; set; }
+    public int TotalPlaytimeMinutes { get; set; }
+    public int PvpKills { get; set; }
+    public int MobKills { get; set; }
+    public int BossKills { get; set; }
+    public int Deaths { get; set; }
+    public long BlocksPlaced { get; set; }
+    public long BlocksBroken { get; set; }
+    public int EventsCompleted { get; set; }
+    public int PrestigeScore { get; set; }
+}
+
+public sealed class LauncherDashboardPlayerStatsDto
+{
+    public string MinecraftNickname { get; set; } = string.Empty;
+    public int TotalPlaytimeMinutes { get; set; }
+    public int PvpKills { get; set; }
+    public int MobKills { get; set; }
+    public int Deaths { get; set; }
+    public long BlocksPlaced { get; set; }
+    public long BlocksBroken { get; set; }
+    public double CurrentBalance { get; set; }
+    public string Source { get; set; } = string.Empty;
+    public DateTimeOffset? LastSeenAt { get; set; }
+    public DateTimeOffset? LastSyncedAt { get; set; }
+}
+
+public sealed class LauncherDashboardActivityDto
+{
+    public string EventType { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTimeOffset? CreatedAt { get; set; }
+}
+
+public sealed class LauncherDashboardDto
+{
+    public LauncherDashboardNationDto Nation { get; set; } = new();
+    public LauncherDashboardNationStatsDto NationStats { get; set; } = new();
+    public LauncherDashboardPlayerStatsDto PlayerStats { get; set; } = new();
+    public List<LauncherDashboardActivityDto> RecentActivity { get; set; } = new();
+    public double WalletBalance { get; set; }
+}
+
 public sealed class LauncherStateDto
 {
     public bool Initialized { get; set; }
@@ -33,6 +97,7 @@ public sealed class LauncherStateDto
     public string DiagnosticsText { get; set; } = string.Empty;
     public LauncherProgressDto Progress { get; set; } = new();
     public LauncherLinksDto Links { get; set; } = new();
+    public LauncherDashboardDto Dashboard { get; set; } = new();
 }
 
 public sealed class OperationResponseDto
@@ -59,6 +124,3 @@ public sealed class SettingsUpdateDto
 {
     public int MaxRamMb { get; set; }
 }
-
-
-

@@ -31,6 +31,9 @@ E:\voidrp_launcher_vue
 │   ├── dev-electron.bat
 │   └── fix-electron-build.mjs
 ├── src
+│   ├── assets
+│   │   └── images
+│   │       └── launcher-bg.jpg
 │   ├── components
 │   │   └── ToastHost.vue
 │   ├── router
@@ -45,6 +48,7 @@ E:\voidrp_launcher_vue
 │   │   ├── AppLayout.vue
 │   │   ├── HomeView.vue
 │   │   ├── LoginView.vue
+│   │   ├── NationView.vue
 │   │   └── SettingsView.vue
 │   ├── App.vue
 │   ├── main.ts
@@ -151,6 +155,70 @@ public sealed class LauncherLinksDto
     public string VerifyEmailUrl { get; set; } = string.Empty;
 }
 
+public sealed class LauncherDashboardNationDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Tag { get; set; } = string.Empty;
+    public string AccentColor { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string IconUrl { get; set; } = string.Empty;
+    public string IconPreviewUrl { get; set; } = string.Empty;
+    public string BannerUrl { get; set; } = string.Empty;
+    public string BannerPreviewUrl { get; set; } = string.Empty;
+    public string BackgroundUrl { get; set; } = string.Empty;
+    public string BackgroundPreviewUrl { get; set; } = string.Empty;
+    public string AllianceTitle { get; set; } = string.Empty;
+    public string AllianceTag { get; set; } = string.Empty;
+}
+
+public sealed class LauncherDashboardNationStatsDto
+{
+    public double TreasuryBalance { get; set; }
+    public int TerritoryPoints { get; set; }
+    public int TotalPlaytimeMinutes { get; set; }
+    public int PvpKills { get; set; }
+    public int MobKills { get; set; }
+    public int BossKills { get; set; }
+    public int Deaths { get; set; }
+    public long BlocksPlaced { get; set; }
+    public long BlocksBroken { get; set; }
+    public int EventsCompleted { get; set; }
+    public int PrestigeScore { get; set; }
+}
+
+public sealed class LauncherDashboardPlayerStatsDto
+{
+    public string MinecraftNickname { get; set; } = string.Empty;
+    public int TotalPlaytimeMinutes { get; set; }
+    public int PvpKills { get; set; }
+    public int MobKills { get; set; }
+    public int Deaths { get; set; }
+    public long BlocksPlaced { get; set; }
+    public long BlocksBroken { get; set; }
+    public double CurrentBalance { get; set; }
+    public string Source { get; set; } = string.Empty;
+    public DateTimeOffset? LastSeenAt { get; set; }
+    public DateTimeOffset? LastSyncedAt { get; set; }
+}
+
+public sealed class LauncherDashboardActivityDto
+{
+    public string EventType { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTimeOffset? CreatedAt { get; set; }
+}
+
+public sealed class LauncherDashboardDto
+{
+    public LauncherDashboardNationDto Nation { get; set; } = new();
+    public LauncherDashboardNationStatsDto NationStats { get; set; } = new();
+    public LauncherDashboardPlayerStatsDto PlayerStats { get; set; } = new();
+    public List<LauncherDashboardActivityDto> RecentActivity { get; set; } = new();
+    public double WalletBalance { get; set; }
+}
+
 public sealed class LauncherStateDto
 {
     public bool Initialized { get; set; }
@@ -169,6 +237,7 @@ public sealed class LauncherStateDto
     public string DiagnosticsText { get; set; } = string.Empty;
     public LauncherProgressDto Progress { get; set; } = new();
     public LauncherLinksDto Links { get; set; } = new();
+    public LauncherDashboardDto Dashboard { get; set; } = new();
 }
 
 public sealed class OperationResponseDto
@@ -195,9 +264,6 @@ public sealed class SettingsUpdateDto
 {
     public int MaxRamMb { get; set; }
 }
-
-
-
 
 
 
@@ -296,6 +362,70 @@ public sealed class MeResponseDto
     [JsonPropertyName("security")] public AccountSecurityReadDto Security { get; set; } = new();
 }
 
+public sealed class LauncherDashboardNationResponseDto
+{
+    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("slug")] public string Slug { get; set; } = string.Empty;
+    [JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+    [JsonPropertyName("tag")] public string Tag { get; set; } = string.Empty;
+    [JsonPropertyName("accent_color")] public string AccentColor { get; set; } = string.Empty;
+    [JsonPropertyName("role")] public string Role { get; set; } = string.Empty;
+    [JsonPropertyName("icon_url")] public string IconUrl { get; set; } = string.Empty;
+    [JsonPropertyName("icon_preview_url")] public string IconPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("banner_url")] public string BannerUrl { get; set; } = string.Empty;
+    [JsonPropertyName("banner_preview_url")] public string BannerPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("background_url")] public string BackgroundUrl { get; set; } = string.Empty;
+    [JsonPropertyName("background_preview_url")] public string BackgroundPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("alliance_title")] public string AllianceTitle { get; set; } = string.Empty;
+    [JsonPropertyName("alliance_tag")] public string AllianceTag { get; set; } = string.Empty;
+}
+
+public sealed class LauncherDashboardNationStatsResponseDto
+{
+    [JsonPropertyName("treasury_balance")] public double TreasuryBalance { get; set; }
+    [JsonPropertyName("territory_points")] public int TerritoryPoints { get; set; }
+    [JsonPropertyName("total_playtime_minutes")] public int TotalPlaytimeMinutes { get; set; }
+    [JsonPropertyName("pvp_kills")] public int PvpKills { get; set; }
+    [JsonPropertyName("mob_kills")] public int MobKills { get; set; }
+    [JsonPropertyName("boss_kills")] public int BossKills { get; set; }
+    [JsonPropertyName("deaths")] public int Deaths { get; set; }
+    [JsonPropertyName("blocks_placed")] public long BlocksPlaced { get; set; }
+    [JsonPropertyName("blocks_broken")] public long BlocksBroken { get; set; }
+    [JsonPropertyName("events_completed")] public int EventsCompleted { get; set; }
+    [JsonPropertyName("prestige_score")] public int PrestigeScore { get; set; }
+}
+
+public sealed class LauncherDashboardPlayerStatsResponseDto
+{
+    [JsonPropertyName("minecraft_nickname")] public string MinecraftNickname { get; set; } = string.Empty;
+    [JsonPropertyName("total_playtime_minutes")] public int TotalPlaytimeMinutes { get; set; }
+    [JsonPropertyName("pvp_kills")] public int PvpKills { get; set; }
+    [JsonPropertyName("mob_kills")] public int MobKills { get; set; }
+    [JsonPropertyName("deaths")] public int Deaths { get; set; }
+    [JsonPropertyName("blocks_placed")] public long BlocksPlaced { get; set; }
+    [JsonPropertyName("blocks_broken")] public long BlocksBroken { get; set; }
+    [JsonPropertyName("current_balance")] public double CurrentBalance { get; set; }
+    [JsonPropertyName("source")] public string Source { get; set; } = string.Empty;
+    [JsonPropertyName("last_seen_at")] public DateTimeOffset? LastSeenAt { get; set; }
+    [JsonPropertyName("last_synced_at")] public DateTimeOffset? LastSyncedAt { get; set; }
+}
+
+public sealed class LauncherDashboardActivityResponseDto
+{
+    [JsonPropertyName("event_type")] public string EventType { get; set; } = string.Empty;
+    [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+    [JsonPropertyName("created_at")] public DateTimeOffset? CreatedAt { get; set; }
+}
+
+public sealed class LauncherDashboardResponseDto
+{
+    [JsonPropertyName("nation")] public LauncherDashboardNationResponseDto? Nation { get; set; }
+    [JsonPropertyName("nation_stats")] public LauncherDashboardNationStatsResponseDto? NationStats { get; set; }
+    [JsonPropertyName("player_stats")] public LauncherDashboardPlayerStatsResponseDto? PlayerStats { get; set; }
+    [JsonPropertyName("recent_activity")] public List<LauncherDashboardActivityResponseDto> RecentActivity { get; set; } = new();
+    [JsonPropertyName("wallet_balance")] public double WalletBalance { get; set; }
+}
+
 public sealed class LauncherAuthSnapshot
 {
     public string AccessToken { get; set; } = string.Empty;
@@ -318,6 +448,8 @@ public sealed class LauncherTokenEnvelope
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
+
+
 
 
 
@@ -584,6 +716,14 @@ public sealed class LauncherAccountApiClient
         return await ReadJsonAsync<IssuePlayTicketResponseDto>(response, cancellationToken);
     }
 
+    public async Task<LauncherDashboardResponseDto> GetLauncherDashboardAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "launcher/me/dashboard");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<LauncherDashboardResponseDto>(response, cancellationToken);
+    }
+
     private async Task<T> PostJsonAsync<T>(string url, object payload, CancellationToken cancellationToken)
     {
         using var response = await _httpClient.PostAsJsonAsync(url, payload, JsonOptions, cancellationToken);
@@ -747,6 +887,12 @@ public sealed class LauncherAuthSessionService
         return await _apiClient.RequestPlayTicketAsync(_snapshot.AccessToken, launcherVersion, launcherPlatform, cancellationToken);
     }
 
+    public async Task<LauncherDashboardResponseDto> GetDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetLauncherDashboardAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
     public async Task<RevokeSessionsResponseDto> RevokeOtherSessionsAsync(CancellationToken cancellationToken = default)
     {
         if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken) || string.IsNullOrWhiteSpace(_snapshot.RefreshToken)) throw new InvalidOperationException("Launcher user is not authenticated");
@@ -809,6 +955,8 @@ public sealed class AuthenticatedLaunchService
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
     }
 }
+
+
 
 
 
@@ -1792,7 +1940,12 @@ public sealed class LauncherFacadeService
                     }
                 }
 
+                var dashboard = snapshot?.IsAuthenticated == true
+                    ? await TryLoadDashboardAsync(cancellationToken)
+                    : null;
+
                 _stateService.ApplySnapshot(snapshot);
+                _stateService.ApplyDashboard(dashboard);
                 _stateService.SetInitialized(true);
                 _stateService.ClearProgress();
                 _stateService.SetStatus(snapshot?.IsAuthenticated == true
@@ -1827,7 +1980,9 @@ public sealed class LauncherFacadeService
                 {
                 }
 
+                var dashboard = await TryLoadDashboardAsync(cancellationToken);
                 _stateService.ApplySnapshot(snapshot);
+                _stateService.ApplyDashboard(dashboard);
                 _stateService.SetStatus("Вход выполнен.");
                 return OperationResponseDto.Success(GetState(), "Вход выполнен.");
             }
@@ -1849,6 +2004,7 @@ public sealed class LauncherFacadeService
             {
                 await _authSessionService.LogoutAsync(cancellationToken);
                 _stateService.ApplySnapshot(null);
+                _stateService.ApplyDashboard(null);
                 _stateService.SetStatus("Вы вышли из аккаунта.");
                 return OperationResponseDto.Success(GetState(), "Вы вышли из аккаунта.");
             }
@@ -2023,12 +2179,28 @@ public sealed class LauncherFacadeService
         if (value > 100) return 100;
         return value;
     }
+
+
+    private async Task<LauncherDashboardResponseDto?> TryLoadDashboardAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _authSessionService.GetDashboardAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Dashboard", $"Launcher dashboard load failed: {ex.Message}");
+            return null;
+        }
+    }
 }
+
 
 
 ------------------------------------------------------------
 Файл: E:\voidrp_launcher_vue\core\VoidRpLauncher.CoreHost\Services\LauncherStateService.cs
 ------------------------------------------------------------
+using System.Linq;
 using VoidRpLauncher.CoreHost.Configuration;
 using VoidRpLauncher.CoreHost.Contracts;
 using VoidRpLauncher.CoreHost.Models.Account;
@@ -2046,6 +2218,7 @@ public sealed class LauncherStateService
     private string _emailVerifiedText = "Требуется вход";
     private LauncherProgressDto _progress = new();
     private LauncherAuthSnapshot? _snapshot;
+    private LauncherDashboardResponseDto? _dashboard;
 
     public bool IsInitialized
     {
@@ -2110,6 +2283,7 @@ public sealed class LauncherStateService
             _snapshot = snapshot;
             if (snapshot?.IsAuthenticated != true)
             {
+                _dashboard = null;
                 _accountPrimaryText = "Гость";
                 _accountSecondaryText = "Войдите, чтобы запустить игру";
                 _emailVerifiedText = "Требуется вход";
@@ -2121,6 +2295,14 @@ public sealed class LauncherStateService
                 : snapshot.PlayerAccount.MinecraftNickname;
             _accountSecondaryText = $"{snapshot.User.SiteLogin} • {snapshot.User.Email}";
             _emailVerifiedText = snapshot.User.EmailVerified ? "Почта подтверждена" : "Почта не подтверждена";
+        }
+    }
+
+    public void ApplyDashboard(LauncherDashboardResponseDto? dashboard)
+    {
+        lock (_lock)
+        {
+            _dashboard = dashboard;
         }
     }
 
@@ -2162,9 +2344,80 @@ public sealed class LauncherStateService
                     RegisterUrl = endpoints.RegisterUrl,
                     ForgotPasswordUrl = endpoints.ForgotPasswordUrl,
                     VerifyEmailUrl = endpoints.VerifyEmailUrl
-                }
+                },
+                Dashboard = BuildDashboardDto(_dashboard)
             };
         }
+    }
+
+    private static LauncherDashboardDto BuildDashboardDto(LauncherDashboardResponseDto? dashboard)
+    {
+        if (dashboard is null)
+        {
+            return new LauncherDashboardDto();
+        }
+
+        return new LauncherDashboardDto
+        {
+            WalletBalance = dashboard.WalletBalance,
+            Nation = dashboard.Nation is null
+                ? new LauncherDashboardNationDto()
+                : new LauncherDashboardNationDto
+                {
+                    Id = dashboard.Nation.Id ?? string.Empty,
+                    Slug = dashboard.Nation.Slug ?? string.Empty,
+                    Title = dashboard.Nation.Title ?? string.Empty,
+                    Tag = dashboard.Nation.Tag ?? string.Empty,
+                    AccentColor = dashboard.Nation.AccentColor ?? string.Empty,
+                    Role = dashboard.Nation.Role ?? string.Empty,
+                    IconUrl = dashboard.Nation.IconUrl ?? string.Empty,
+                    IconPreviewUrl = dashboard.Nation.IconPreviewUrl ?? string.Empty,
+                    BannerUrl = dashboard.Nation.BannerUrl ?? string.Empty,
+                    BannerPreviewUrl = dashboard.Nation.BannerPreviewUrl ?? string.Empty,
+                    BackgroundUrl = dashboard.Nation.BackgroundUrl ?? string.Empty,
+                    BackgroundPreviewUrl = dashboard.Nation.BackgroundPreviewUrl ?? string.Empty,
+                    AllianceTitle = dashboard.Nation.AllianceTitle ?? string.Empty,
+                    AllianceTag = dashboard.Nation.AllianceTag ?? string.Empty,
+                },
+            NationStats = dashboard.NationStats is null
+                ? new LauncherDashboardNationStatsDto()
+                : new LauncherDashboardNationStatsDto
+                {
+                    TreasuryBalance = dashboard.NationStats.TreasuryBalance,
+                    TerritoryPoints = dashboard.NationStats.TerritoryPoints,
+                    TotalPlaytimeMinutes = dashboard.NationStats.TotalPlaytimeMinutes,
+                    PvpKills = dashboard.NationStats.PvpKills,
+                    MobKills = dashboard.NationStats.MobKills,
+                    BossKills = dashboard.NationStats.BossKills,
+                    Deaths = dashboard.NationStats.Deaths,
+                    BlocksPlaced = dashboard.NationStats.BlocksPlaced,
+                    BlocksBroken = dashboard.NationStats.BlocksBroken,
+                    EventsCompleted = dashboard.NationStats.EventsCompleted,
+                    PrestigeScore = dashboard.NationStats.PrestigeScore,
+                },
+            PlayerStats = dashboard.PlayerStats is null
+                ? new LauncherDashboardPlayerStatsDto()
+                : new LauncherDashboardPlayerStatsDto
+                {
+                    MinecraftNickname = dashboard.PlayerStats.MinecraftNickname ?? string.Empty,
+                    TotalPlaytimeMinutes = dashboard.PlayerStats.TotalPlaytimeMinutes,
+                    PvpKills = dashboard.PlayerStats.PvpKills,
+                    MobKills = dashboard.PlayerStats.MobKills,
+                    Deaths = dashboard.PlayerStats.Deaths,
+                    BlocksPlaced = dashboard.PlayerStats.BlocksPlaced,
+                    BlocksBroken = dashboard.PlayerStats.BlocksBroken,
+                    CurrentBalance = dashboard.PlayerStats.CurrentBalance,
+                    Source = dashboard.PlayerStats.Source ?? string.Empty,
+                    LastSeenAt = dashboard.PlayerStats.LastSeenAt,
+                    LastSyncedAt = dashboard.PlayerStats.LastSyncedAt,
+                },
+            RecentActivity = dashboard.RecentActivity?.Select(item => new LauncherDashboardActivityDto
+            {
+                EventType = item.EventType ?? string.Empty,
+                Message = item.Message ?? string.Empty,
+                CreatedAt = item.CreatedAt
+            }).ToList() ?? new List<LauncherDashboardActivityDto>()
+        };
     }
 
     private static double ClampPercent(double value)
@@ -2174,9 +2427,6 @@ public sealed class LauncherStateService
         return value;
     }
 }
-
-
-
 
 
 
@@ -2734,6 +2984,7 @@ publish:
   url: https://void-rp.ru/launcher/electron
 
 win:
+  icon: build-resources/icon.ico
   executableName: VoidRpLauncher
   target:
     - target: portable
@@ -9533,7 +9784,7 @@ portable:
 ------------------------------------------------------------
 {
   "name": "voidrp-electron-bridge",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "VoidRP Launcher strategic migration: Electron + Vue UI with embedded C# launcher core",
   "main": "dist-electron/main.js",
   "author": "OpenAI for VoidRP",
@@ -9860,87 +10111,136 @@ import { computed } from 'vue'
 import { useLauncherStore } from '../stores/launcher'
 
 const launcher = useLauncherStore()
+const diagnosticsText = computed(() => launcher.diagnosticsText?.trim() || 'Диагностика пока пуста.')
 
-const diagnosticsText = computed(() => {
-  return launcher.diagnosticsText?.trim() || 'Диагностика пока пуста.'
-})
+function formatNumber(value: number | string | null | undefined) {
+  const numeric = Number(value ?? 0)
+  return new Intl.NumberFormat('ru-RU').format(Number.isFinite(numeric) ? numeric : 0)
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date)
+}
 </script>
 
 <template>
-  <div class="max-w-[920px]">
-    <p class="text-[11px] uppercase tracking-[0.25em] text-violet-300/70">
-      Аккаунт
-    </p>
-
-    <h2 class="mt-2 text-3xl font-semibold leading-tight">
-      Профиль игрока
-    </h2>
-
-    <div class="mt-5 grid gap-4">
-      <section class="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
-        <p class="text-sm text-white/45">Игровой ник</p>
-        <p class="mt-2 text-2xl font-semibold">
-          {{ launcher.accountNickname }}
-        </p>
-      </section>
-
-      <section class="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
-        <p class="text-sm text-white/45">Аккаунт</p>
-        <p class="mt-2 text-base font-medium">
-          {{ launcher.accountMeta.login }}
-        </p>
-        <p class="mt-1 text-sm text-white/60">
-          {{ launcher.accountMeta.email }}
-        </p>
-        <p class="mt-3 text-sm text-white/55">
-          {{ launcher.emailVerifiedText }}
-        </p>
-      </section>
-
-      <section class="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
-        <p class="text-sm text-white/45">Полезные ссылки</p>
-
-        <div class="mt-4 flex flex-wrap gap-3">
-          <button
-            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-            @click="launcher.openExternal(launcher.links.verifyEmailUrl)"
-          >
-            Подтвердить почту
-          </button>
-
-          <button
-            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-            @click="launcher.openExternal(launcher.links.forgotPasswordUrl)"
-          >
-            Сменить пароль
-          </button>
-
-          <button
-            class="rounded-2xl border border-red-400/15 bg-red-400/10 px-4 py-2.5 text-sm text-red-100 transition hover:bg-red-400/15"
-            @click="launcher.logout()"
-          >
-            Выйти из аккаунта
-          </button>
-        </div>
-      </section>
-
-      <section class="rounded-[24px] border border-white/10 bg-white/[0.035] p-5">
-        <div class="mb-3 flex items-center justify-between gap-3">
-          <p class="text-sm text-white/45">Диагностика</p>
-
-          <button
-            class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:bg-white/8 hover:text-white"
-            @click="launcher.clearDiagnostics()"
-          >
-            Очистить
-          </button>
+  <div class="space-y-3">
+    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Профиль</p>
+          <p class="mt-2 text-2xl font-semibold">{{ launcher.accountNickname }}</p>
+          <p class="mt-1 text-sm text-white/55">{{ launcher.accountMeta.login }}</p>
+          <p class="mt-1 text-sm text-white/55">{{ launcher.accountMeta.email }}</p>
+          <p class="mt-2 text-xs text-white/50">{{ launcher.emailVerifiedText }}</p>
         </div>
 
-        <pre class="max-h-[260px] overflow-auto whitespace-pre-wrap break-all rounded-2xl border border-white/8 bg-[#060912] p-4 text-xs leading-5 text-white/65">{{ diagnosticsText }}</pre>
-      </section>
-    </div>
+        <div class="grid grid-cols-2 gap-3 md:min-w-[340px]">
+          <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
+            <p class="text-lg font-semibold">{{ formatNumber(launcher.walletBalance) }}</p>
+            <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Баланс</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
+            <p class="text-lg font-semibold">{{ formatNumber(Math.floor((launcher.playerStats.totalPlaytimeMinutes || 0) / 60)) }} ч</p>
+            <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Онлайн</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Личная статистика</p>
+          <h2 class="mt-1 text-lg font-semibold">Игровые показатели</h2>
+        </div>
+        <div class="text-right text-xs text-white/45">
+          <p>Последний онлайн: {{ formatDate(launcher.playerStats.lastSeenAt) }}</p>
+          <p class="mt-1">Синхронизация: {{ formatDate(launcher.playerStats.lastSyncedAt) }}</p>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">PvP</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.mobKills) }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Мобы</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.deaths) }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Смерти</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-lg font-semibold">{{ launcher.playerStats.source || '—' }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Источник</p>
+        </div>
+      </div>
+
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksPlaced) }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Поставлено</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+          <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksBroken) }}</p>
+          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Сломано</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+      <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Аккаунт</p>
+
+      <div class="mt-4 flex flex-wrap gap-2.5">
+        <button
+          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
+          @click="launcher.openExternal(launcher.links.verifyEmailUrl)"
+        >
+          Подтвердить почту
+        </button>
+
+        <button
+          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
+          @click="launcher.openExternal(launcher.links.forgotPasswordUrl)"
+        >
+          Сменить пароль
+        </button>
+
+        <button
+          class="rounded-2xl border border-red-400/15 bg-red-400/10 px-4 py-2.5 text-sm text-red-100 transition hover:bg-red-400/15"
+          @click="launcher.logout()"
+        >
+          Выйти из аккаунта
+        </button>
+      </div>
+    </section>
+
+    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p class="text-sm text-white/45">Диагностика</p>
+
+        <button
+          class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:bg-white/8 hover:text-white"
+          @click="launcher.clearDiagnostics()"
+        >
+          Очистить
+        </button>
+      </div>
+
+      <pre class="max-h-[250px] overflow-auto whitespace-pre-wrap break-all rounded-2xl border border-white/8 bg-[#060912] p-4 text-xs leading-5 text-white/65">{{ diagnosticsText }}</pre>
+    </section>
   </div>
 </template>
+
 
 
 ------------------------------------------------------------
@@ -9955,40 +10255,49 @@ const route = useRoute()
 
 const navItems = [
   { title: 'Главная', to: '/home' },
-  { title: 'Настройки', to: '/settings' },
-  { title: 'Аккаунт', to: '/account' }
+  { title: 'Государство', to: '/nation' },
+  { title: 'Аккаунт', to: '/account' },
+  { title: 'Настройки', to: '/settings' }
 ]
 </script>
 
 <template>
-  <div class="mx-auto flex h-full max-w-[1220px] flex-col gap-4 p-5">
-    <header class="rounded-[28px] border border-white/10 bg-[#091022]/88 px-5 py-4 backdrop-blur-xl">
+  <div class="mx-auto flex h-full max-w-[1180px] flex-col gap-3 p-4">
+    <header class="rounded-[24px] border border-white/10 bg-[#091022]/88 px-4 py-3 backdrop-blur-xl">
       <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
-          <p class="text-[11px] uppercase tracking-[0.28em] text-violet-300/75">VoidRP Launcher</p>
+          <p class="text-[10px] uppercase tracking-[0.26em] text-violet-300/75">VoidRP Launcher</p>
 
-          <div class="mt-2 flex items-center gap-3">
-            <h1 class="truncate text-2xl font-semibold">{{ launcher.accountNickname }}</h1>
-            <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium text-emerald-200">
-              Готов к запуску
+          <div class="mt-1.5 flex flex-wrap items-center gap-2">
+            <h1 class="truncate text-xl font-semibold">{{ launcher.accountNickname }}</h1>
+
+            <span
+              v-if="launcher.nation.title"
+              class="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-medium text-violet-200"
+            >
+              {{ launcher.nation.tag ? `[${launcher.nation.tag}]` : 'Государство' }}
+            </span>
+
+            <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-medium text-emerald-200">
+              Готов
             </span>
           </div>
 
-          <p class="mt-1 truncate text-sm text-white/55">
+          <p class="mt-1 truncate text-xs text-white/55">
             {{ launcher.accountMeta.login }} • {{ launcher.accountMeta.email }}
           </p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
           <button
-            class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
+            class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
             @click="launcher.logout()"
           >
             Выйти
           </button>
 
           <button
-            class="rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            class="rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="launcher.isBusy"
             @click="launcher.play()"
           >
@@ -10000,7 +10309,7 @@ const navItems = [
 
     <section
       v-if="launcher.shouldShowProgress"
-      class="rounded-[24px] border border-white/10 bg-[#091022]/82 px-5 py-4 backdrop-blur-xl"
+      class="rounded-[20px] border border-white/10 bg-[#091022]/82 px-4 py-3 backdrop-blur-xl"
     >
       <div class="flex items-start justify-between gap-3">
         <div>
@@ -10018,14 +10327,14 @@ const navItems = [
       </div>
     </section>
 
-    <div class="flex min-h-0 flex-1 gap-4">
-      <aside class="w-[220px] shrink-0 rounded-[26px] border border-white/10 bg-[#091022]/82 p-3 backdrop-blur-xl">
+    <div class="flex min-h-0 flex-1 gap-3">
+      <aside class="w-[210px] shrink-0 rounded-[24px] border border-white/10 bg-[#091022]/82 p-3 backdrop-blur-xl">
         <nav class="space-y-2">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="block rounded-2xl px-3 py-3 text-sm transition"
+            class="block rounded-2xl px-3 py-2.5 text-sm transition"
             :class="route.path === item.to ? 'bg-violet-500/15 text-white' : 'text-white/65 hover:bg-white/6 hover:text-white'"
           >
             {{ item.title }}
@@ -10033,14 +10342,14 @@ const navItems = [
         </nav>
 
         <div class="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-[11px] uppercase tracking-[0.18em] text-white/35">Лаунчер</p>
+          <p class="text-[10px] uppercase tracking-[0.18em] text-white/35">Лаунчер</p>
           <p class="mt-2 text-sm font-medium text-white/90">Версия {{ launcher.launcherVersionText }}</p>
           <p class="mt-1 text-xs leading-5 text-white/50">{{ launcher.statusText }}</p>
         </div>
       </aside>
 
-      <main class="min-h-0 flex-1 overflow-hidden rounded-[26px] border border-white/10 bg-[#091022]/82 backdrop-blur-xl">
-        <div class="h-full overflow-auto p-5">
+      <main class="min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-[#091022]/82 backdrop-blur-xl">
+        <div class="h-full overflow-auto p-4">
           <RouterView />
         </div>
       </main>
@@ -10054,30 +10363,35 @@ const navItems = [
 Файл: E:\voidrp_launcher_vue\src\views\HomeView.vue
 ------------------------------------------------------------
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useLauncherStore } from '../stores/launcher'
 
 const launcher = useLauncherStore()
+
+function formatNumber(value: number | string | null | undefined) {
+  const numeric = Number(value ?? 0)
+  return new Intl.NumberFormat('ru-RU').format(Number.isFinite(numeric) ? numeric : 0)
+}
+
+const hasNation = computed(() => Boolean(launcher.nation.title))
 </script>
 
 <template>
-  <div class="grid grid-cols-12 gap-4">
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 xl:col-span-8">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-violet-300/70">
-        Запуск
-      </p>
+  <div class="grid grid-cols-12 gap-3">
+    <section class="col-span-12 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 xl:col-span-7">
+      <p class="text-[10px] uppercase tracking-[0.25em] text-violet-300/70">Запуск</p>
 
-      <h2 class="mt-2 text-3xl font-semibold leading-tight">
-        Всё готово для входа в игру
+      <h2 class="mt-2 text-2xl font-semibold leading-tight">
+        Всё готово для входа
       </h2>
 
-      <p class="mt-3 max-w-[620px] text-sm leading-6 text-white/60">
-        Нажмите «Играть», чтобы лаунчер проверил клиент, синхронизировал файлы
-        и запустил Minecraft с вашего аккаунта.
+      <p class="mt-2 max-w-[560px] text-sm leading-6 text-white/60">
+        Лаунчер проверит клиент, синхронизирует файлы и запустит Minecraft с твоим аккаунтом.
       </p>
 
-      <div class="mt-5 flex flex-wrap gap-3">
+      <div class="mt-4 flex flex-wrap gap-2.5">
         <button
-          class="rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="launcher.isBusy"
           @click="launcher.play()"
         >
@@ -10085,7 +10399,7 @@ const launcher = useLauncherStore()
         </button>
 
         <button
-          class="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="launcher.isBusy"
           @click="launcher.repair()"
         >
@@ -10094,80 +10408,50 @@ const launcher = useLauncherStore()
       </div>
     </section>
 
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 md:col-span-6 xl:col-span-4">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-white/35">
-        Аккаунт
-      </p>
-      <p class="mt-2 text-xl font-semibold">
-        {{ launcher.accountNickname }}
-      </p>
-      <p class="mt-1 text-sm text-white/55">
-        {{ launcher.accountMeta.login }} • {{ launcher.accountMeta.email }}
-      </p>
-      <p class="mt-3 text-sm text-white/60">
-        {{ launcher.emailVerifiedText }}
-      </p>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 xl:col-span-2">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Баланс</p>
+      <p class="mt-2 text-xl font-semibold">{{ formatNumber(launcher.walletBalance) }}</p>
+      <p class="mt-1 text-xs text-white/55">деньги игрока</p>
     </section>
 
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 md:col-span-6 xl:col-span-4">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-white/35">
-        Память
-      </p>
-      <p class="mt-2 text-xl font-semibold">
-        {{ launcher.currentMemoryText }}
-      </p>
-      <p class="mt-1 text-sm text-white/55">
-        Текущее значение для Minecraft
-      </p>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 xl:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Государство</p>
+      <template v-if="hasNation">
+        <p class="mt-2 text-lg font-semibold">{{ launcher.nation.title }}</p>
+        <p class="mt-1 text-xs text-white/55">{{ launcher.nation.tag ? `[${launcher.nation.tag}]` : '' }} · {{ launcher.nation.role || 'Участник' }}</p>
+      </template>
+      <template v-else>
+        <p class="mt-2 text-lg font-semibold">Не выбрано</p>
+        <p class="mt-1 text-xs text-white/55">государства нет</p>
+      </template>
     </section>
 
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 md:col-span-6 xl:col-span-4">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-white/35">
-        Локальное ядро
-      </p>
-      <p class="mt-2 text-xl font-semibold">
-        {{ launcher.coreStatus.running ? 'Подключено' : 'Недоступно' }}
-      </p>
-      <p class="mt-1 text-sm text-white/55">
-        {{ launcher.coreStatus.message || launcher.coreStatus.lastError || 'Рабочее состояние ядра.' }}
-      </p>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Казна</p>
+      <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.nationStats.treasuryBalance) }}</p>
+      <p class="mt-1 text-xs text-white/55">баланс государства</p>
     </section>
 
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 md:col-span-6 xl:col-span-4">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-white/35">
-        Состояние
-      </p>
-      <p class="mt-2 text-xl font-semibold">
-        {{ launcher.statusText }}
-      </p>
-      <p class="mt-1 text-sm text-white/55">
-        Версия лаунчера: {{ launcher.launcherVersionText }}
-      </p>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Территория</p>
+      <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.nationStats.territoryPoints) }}</p>
+      <p class="mt-1 text-xs text-white/55">очки территории</p>
     </section>
 
-    <section class="col-span-12 rounded-[24px] border border-white/10 bg-white/[0.035] p-5 md:col-span-6 xl:col-span-4">
-      <p class="text-[11px] uppercase tracking-[0.25em] text-white/35">
-        Быстрые действия
-      </p>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Престиж</p>
+      <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.nationStats.prestigeScore) }}</p>
+      <p class="mt-1 text-xs text-white/55">сила государства</p>
+    </section>
 
-      <div class="mt-4 flex flex-wrap gap-3">
-        <button
-          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-          @click="launcher.openPath(launcher.logsDirectory)"
-        >
-          Открыть логи
-        </button>
-
-        <button
-          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-          @click="launcher.openPath(launcher.gameDirectory)"
-        >
-          Открыть папку игры
-        </button>
-      </div>
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">PvP</p>
+      <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
+      <p class="mt-1 text-xs text-white/55">личные убийства</p>
     </section>
   </div>
 </template>
+
 
 
 ------------------------------------------------------------
@@ -10303,6 +10587,168 @@ async function submit() {
         <span>{{ launcher.statusText }}</span>
       </div>
     </div>
+  </div>
+</template>
+
+
+
+------------------------------------------------------------
+Файл: E:\voidrp_launcher_vue\src\views\NationView.vue
+------------------------------------------------------------
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useLauncherStore } from '../stores/launcher'
+
+const launcher = useLauncherStore()
+
+const hasNation = computed(() => Boolean(launcher.nation.title))
+const nationImage = computed(() => launcher.nation.bannerUrl || launcher.nation.bannerPreviewUrl || '')
+const nationIcon = computed(() => launcher.nation.iconUrl || launcher.nation.iconPreviewUrl || '')
+
+function formatNumber(value: number | string | null | undefined) {
+  const numeric = Number(value ?? 0)
+  return new Intl.NumberFormat('ru-RU').format(Number.isFinite(numeric) ? numeric : 0)
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date)
+}
+</script>
+
+<template>
+  <div class="space-y-3">
+    <template v-if="hasNation">
+      <section class="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]">
+        <div
+          class="relative min-h-[170px] p-4"
+          :style="nationImage ? { backgroundImage: `linear-gradient(180deg, rgba(4,6,11,.18), rgba(4,6,11,.78)), url(${nationImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}"
+        >
+          <div class="absolute inset-0" v-if="!nationImage"></div>
+          <div class="relative flex h-full items-end justify-between gap-4">
+            <div class="flex min-w-0 items-end gap-3">
+              <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[18px] border border-white/15 bg-white/8 text-lg font-bold uppercase">
+                <img v-if="nationIcon" :src="nationIcon" alt="nation icon" class="h-full w-full object-cover" />
+                <span v-else>{{ (launcher.nation.tag || 'ST').slice(0, 2) }}</span>
+              </div>
+
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase tracking-[0.24em] text-white/55">Государство</p>
+                <h2 class="mt-2 truncate text-2xl font-semibold">{{ launcher.nation.title }}</h2>
+                <p class="mt-1 text-sm text-white/65">
+                  {{ launcher.nation.tag ? `[${launcher.nation.tag}]` : '' }} · {{ launcher.nation.role || 'Участник' }}
+                </p>
+                <p v-if="launcher.nation.allianceTitle" class="mt-1 text-xs text-white/55">
+                  Альянс: {{ launcher.nation.allianceTitle }} {{ launcher.nation.allianceTag ? `[${launcher.nation.allianceTag}]` : '' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-md text-right">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-white/50">Казна</p>
+              <p class="mt-1 text-xl font-semibold">{{ formatNumber(launcher.nationStats.treasuryBalance) }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-12 gap-3">
+        <div class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Территория</p>
+          <p class="mt-2 text-xl font-semibold">{{ formatNumber(launcher.nationStats.territoryPoints) }}</p>
+        </div>
+        <div class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Престиж</p>
+          <p class="mt-2 text-xl font-semibold">{{ formatNumber(launcher.nationStats.prestigeScore) }}</p>
+        </div>
+        <div class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Общий онлайн</p>
+          <p class="mt-2 text-xl font-semibold">{{ formatNumber(Math.floor((launcher.nationStats.totalPlaytimeMinutes || 0) / 60)) }} ч</p>
+        </div>
+        <div class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">События</p>
+          <p class="mt-2 text-xl font-semibold">{{ formatNumber(launcher.nationStats.eventsCompleted) }}</p>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-12 gap-3">
+        <div class="col-span-12 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 xl:col-span-7">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Личная статистика</p>
+              <h3 class="mt-1 text-lg font-semibold">Твой вклад в государство</h3>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-white/40">Баланс</p>
+              <p class="mt-1 text-lg font-semibold">{{ formatNumber(launcher.walletBalance) }}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-lg font-semibold">{{ formatNumber(Math.floor((launcher.playerStats.totalPlaytimeMinutes || 0) / 60)) }} ч</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Онлайн</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">PvP</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.mobKills) }}</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Мобы</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.deaths) }}</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Смерти</p>
+            </div>
+          </div>
+
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksPlaced) }}</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Поставлено блоков</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksBroken) }}</p>
+              <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Сломано блоков</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-12 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 xl:col-span-5">
+          <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Активность</p>
+          <h3 class="mt-1 text-lg font-semibold">Последние события</h3>
+
+          <div v-if="!launcher.recentActivity.length" class="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm text-white/55">
+            Активность ещё не загружена.
+          </div>
+
+          <div v-else class="mt-4 space-y-2.5">
+            <div
+              v-for="item in launcher.recentActivity"
+              :key="`${item.eventType}_${item.createdAt}`"
+              class="rounded-2xl border border-white/10 bg-white/[0.04] p-3"
+            >
+              <p class="text-sm font-medium text-white">{{ item.message || item.eventType }}</p>
+              <p class="mt-1 text-xs text-white/45">{{ formatDate(item.createdAt) }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <section v-else class="rounded-[22px] border border-white/10 bg-white/[0.035] p-5">
+      <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Государство</p>
+      <h2 class="mt-2 text-2xl font-semibold">Игрок пока не состоит в государстве</h2>
+      <p class="mt-2 max-w-[560px] text-sm leading-6 text-white/60">
+        Когда игрок вступит в государство, здесь появятся казна, территория, престиж, твоя роль и последняя активность.
+      </p>
+    </section>
   </div>
 </template>
 

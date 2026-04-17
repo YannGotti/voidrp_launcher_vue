@@ -21,6 +21,7 @@ publish:
   url: https://void-rp.ru/launcher/electron
 
 win:
+  icon: build-resources/icon.ico
   executableName: VoidRpLauncher
   target:
     - target: portable

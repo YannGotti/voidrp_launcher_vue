@@ -90,6 +90,70 @@ public sealed class MeResponseDto
     [JsonPropertyName("security")] public AccountSecurityReadDto Security { get; set; } = new();
 }
 
+public sealed class LauncherDashboardNationResponseDto
+{
+    [JsonPropertyName("id")] public string Id { get; set; } = string.Empty;
+    [JsonPropertyName("slug")] public string Slug { get; set; } = string.Empty;
+    [JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+    [JsonPropertyName("tag")] public string Tag { get; set; } = string.Empty;
+    [JsonPropertyName("accent_color")] public string AccentColor { get; set; } = string.Empty;
+    [JsonPropertyName("role")] public string Role { get; set; } = string.Empty;
+    [JsonPropertyName("icon_url")] public string IconUrl { get; set; } = string.Empty;
+    [JsonPropertyName("icon_preview_url")] public string IconPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("banner_url")] public string BannerUrl { get; set; } = string.Empty;
+    [JsonPropertyName("banner_preview_url")] public string BannerPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("background_url")] public string BackgroundUrl { get; set; } = string.Empty;
+    [JsonPropertyName("background_preview_url")] public string BackgroundPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("alliance_title")] public string AllianceTitle { get; set; } = string.Empty;
+    [JsonPropertyName("alliance_tag")] public string AllianceTag { get; set; } = string.Empty;
+}
+
+public sealed class LauncherDashboardNationStatsResponseDto
+{
+    [JsonPropertyName("treasury_balance")] public double TreasuryBalance { get; set; }
+    [JsonPropertyName("territory_points")] public int TerritoryPoints { get; set; }
+    [JsonPropertyName("total_playtime_minutes")] public int TotalPlaytimeMinutes { get; set; }
+    [JsonPropertyName("pvp_kills")] public int PvpKills { get; set; }
+    [JsonPropertyName("mob_kills")] public int MobKills { get; set; }
+    [JsonPropertyName("boss_kills")] public int BossKills { get; set; }
+    [JsonPropertyName("deaths")] public int Deaths { get; set; }
+    [JsonPropertyName("blocks_placed")] public long BlocksPlaced { get; set; }
+    [JsonPropertyName("blocks_broken")] public long BlocksBroken { get; set; }
+    [JsonPropertyName("events_completed")] public int EventsCompleted { get; set; }
+    [JsonPropertyName("prestige_score")] public int PrestigeScore { get; set; }
+}
+
+public sealed class LauncherDashboardPlayerStatsResponseDto
+{
+    [JsonPropertyName("minecraft_nickname")] public string MinecraftNickname { get; set; } = string.Empty;
+    [JsonPropertyName("total_playtime_minutes")] public int TotalPlaytimeMinutes { get; set; }
+    [JsonPropertyName("pvp_kills")] public int PvpKills { get; set; }
+    [JsonPropertyName("mob_kills")] public int MobKills { get; set; }
+    [JsonPropertyName("deaths")] public int Deaths { get; set; }
+    [JsonPropertyName("blocks_placed")] public long BlocksPlaced { get; set; }
+    [JsonPropertyName("blocks_broken")] public long BlocksBroken { get; set; }
+    [JsonPropertyName("current_balance")] public double CurrentBalance { get; set; }
+    [JsonPropertyName("source")] public string Source { get; set; } = string.Empty;
+    [JsonPropertyName("last_seen_at")] public DateTimeOffset? LastSeenAt { get; set; }
+    [JsonPropertyName("last_synced_at")] public DateTimeOffset? LastSyncedAt { get; set; }
+}
+
+public sealed class LauncherDashboardActivityResponseDto
+{
+    [JsonPropertyName("event_type")] public string EventType { get; set; } = string.Empty;
+    [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+    [JsonPropertyName("created_at")] public DateTimeOffset? CreatedAt { get; set; }
+}
+
+public sealed class LauncherDashboardResponseDto
+{
+    [JsonPropertyName("nation")] public LauncherDashboardNationResponseDto? Nation { get; set; }
+    [JsonPropertyName("nation_stats")] public LauncherDashboardNationStatsResponseDto? NationStats { get; set; }
+    [JsonPropertyName("player_stats")] public LauncherDashboardPlayerStatsResponseDto? PlayerStats { get; set; }
+    [JsonPropertyName("recent_activity")] public List<LauncherDashboardActivityResponseDto> RecentActivity { get; set; } = new();
+    [JsonPropertyName("wallet_balance")] public double WalletBalance { get; set; }
+}
+
 public sealed class LauncherAuthSnapshot
 {
     public string AccessToken { get; set; } = string.Empty;
@@ -112,6 +176,8 @@ public sealed class LauncherTokenEnvelope
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
+
+
 
 
 

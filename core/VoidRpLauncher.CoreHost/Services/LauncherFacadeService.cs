@@ -87,7 +87,12 @@ public sealed class LauncherFacadeService
                     }
                 }
 
+                var dashboard = snapshot?.IsAuthenticated == true
+                    ? await TryLoadDashboardAsync(cancellationToken)
+                    : null;
+
                 _stateService.ApplySnapshot(snapshot);
+                _stateService.ApplyDashboard(dashboard);
                 _stateService.SetInitialized(true);
                 _stateService.ClearProgress();
                 _stateService.SetStatus(snapshot?.IsAuthenticated == true
@@ -122,7 +127,9 @@ public sealed class LauncherFacadeService
                 {
                 }
 
+                var dashboard = await TryLoadDashboardAsync(cancellationToken);
                 _stateService.ApplySnapshot(snapshot);
+                _stateService.ApplyDashboard(dashboard);
                 _stateService.SetStatus("Вход выполнен.");
                 return OperationResponseDto.Success(GetState(), "Вход выполнен.");
             }
@@ -144,6 +151,7 @@ public sealed class LauncherFacadeService
             {
                 await _authSessionService.LogoutAsync(cancellationToken);
                 _stateService.ApplySnapshot(null);
+                _stateService.ApplyDashboard(null);
                 _stateService.SetStatus("Вы вышли из аккаунта.");
                 return OperationResponseDto.Success(GetState(), "Вы вышли из аккаунта.");
             }
@@ -317,5 +325,19 @@ public sealed class LauncherFacadeService
         if (value < 0) return 0;
         if (value > 100) return 100;
         return value;
+    }
+
+
+    private async Task<LauncherDashboardResponseDto?> TryLoadDashboardAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _authSessionService.GetDashboardAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Dashboard", $"Launcher dashboard load failed: {ex.Message}");
+            return null;
+        }
     }
 }

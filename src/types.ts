@@ -11,6 +11,65 @@ export interface LauncherLinks {
   verifyEmailUrl: string
 }
 
+export interface LauncherDashboardNation {
+  id: string
+  slug: string
+  title: string
+  tag: string
+  accentColor: string
+  role: string
+  iconUrl: string
+  iconPreviewUrl: string
+  bannerUrl: string
+  bannerPreviewUrl: string
+  backgroundUrl: string
+  backgroundPreviewUrl: string
+  allianceTitle: string
+  allianceTag: string
+}
+
+export interface LauncherDashboardNationStats {
+  treasuryBalance: number
+  territoryPoints: number
+  totalPlaytimeMinutes: number
+  pvpKills: number
+  mobKills: number
+  bossKills: number
+  deaths: number
+  blocksPlaced: number
+  blocksBroken: number
+  eventsCompleted: number
+  prestigeScore: number
+}
+
+export interface LauncherDashboardPlayerStats {
+  minecraftNickname: string
+  totalPlaytimeMinutes: number
+  pvpKills: number
+  mobKills: number
+  deaths: number
+  blocksPlaced: number
+  blocksBroken: number
+  currentBalance: number
+  source: string
+  lastSeenAt: string | null
+  lastSyncedAt: string | null
+}
+
+export interface LauncherDashboardActivity {
+  eventType: string
+  message: string
+  createdAt: string | null
+}
+
+export interface LauncherDashboard {
+  nation: LauncherDashboardNation
+  nationStats: LauncherDashboardNationStats
+  playerStats: LauncherDashboardPlayerStats
+  recentActivity: LauncherDashboardActivity[]
+  walletBalance: number
+}
+
 export interface LauncherState {
   initialized: boolean
   isBusy: boolean
@@ -28,6 +87,7 @@ export interface LauncherState {
   diagnosticsText: string
   progress: LauncherProgress
   links: LauncherLinks
+  dashboard: LauncherDashboard
 }
 
 export interface OperationResponse {
@@ -46,7 +106,7 @@ export interface UpdaterStatus {
 }
 
 export interface CoreStatus {
-  kind: string
+  kind?: string
   running: boolean
   baseUrl: string
   executablePath?: string
@@ -77,10 +137,58 @@ export function createDefaultUpdaterStatus(): UpdaterStatus {
 
 export function createDefaultCoreStatus(): CoreStatus {
   return {
-    kind: 'embedded-dotnet',
     running: false,
     baseUrl: 'http://127.0.0.1:38765',
-    message: 'Локальное ядро ещё не запускалось.'
+    message: 'Ядро ещё не запускалось.'
+  }
+}
+
+export function createDefaultDashboard(): LauncherDashboard {
+  return {
+    nation: {
+      id: '',
+      slug: '',
+      title: '',
+      tag: '',
+      accentColor: '',
+      role: '',
+      iconUrl: '',
+      iconPreviewUrl: '',
+      bannerUrl: '',
+      bannerPreviewUrl: '',
+      backgroundUrl: '',
+      backgroundPreviewUrl: '',
+      allianceTitle: '',
+      allianceTag: ''
+    },
+    nationStats: {
+      treasuryBalance: 0,
+      territoryPoints: 0,
+      totalPlaytimeMinutes: 0,
+      pvpKills: 0,
+      mobKills: 0,
+      bossKills: 0,
+      deaths: 0,
+      blocksPlaced: 0,
+      blocksBroken: 0,
+      eventsCompleted: 0,
+      prestigeScore: 0
+    },
+    playerStats: {
+      minecraftNickname: '',
+      totalPlaytimeMinutes: 0,
+      pvpKills: 0,
+      mobKills: 0,
+      deaths: 0,
+      blocksPlaced: 0,
+      blocksBroken: 0,
+      currentBalance: 0,
+      source: '',
+      lastSeenAt: null,
+      lastSyncedAt: null
+    },
+    recentActivity: [],
+    walletBalance: 0
   }
 }
 

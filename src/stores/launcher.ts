@@ -1,8 +1,14 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useLauncherSessionStore } from './launcherSession'
-import type { CoreStatus, LauncherLinks, LauncherState, OperationResponse, UpdaterStatus } from '../types'
-import { createDefaultCoreStatus, createDefaultUpdaterStatus } from '../types'
+import type {
+  CoreStatus,
+  LauncherDashboard,
+  LauncherState,
+  OperationResponse,
+  UpdaterStatus,
+} from '../types'
+import { createDefaultCoreStatus, createDefaultDashboard, createDefaultUpdaterStatus } from '../types'
 
 type ToastTone = 'info' | 'success' | 'warning' | 'error'
 
@@ -16,7 +22,6 @@ export interface LauncherToast {
 function parseAccountSecondary(raw?: string) {
   const source = (raw || '').trim()
   const parts = source.split('•').map((part) => part.trim()).filter(Boolean)
-
   return {
     login: parts[0] || '',
     email: parts[1] || ''
@@ -71,7 +76,7 @@ export const useLauncherStore = defineStore('launcher', () => {
     return true
   })
 
-  const links = computed<LauncherLinks>(() => state.value?.links ?? {
+  const links = computed(() => state.value?.links ?? {
     registerUrl: '',
     forgotPasswordUrl: '',
     verifyEmailUrl: ''
@@ -86,6 +91,12 @@ export const useLauncherStore = defineStore('launcher', () => {
   const dataDirectory = computed(() => state.value?.dataDirectory || '')
   const gameDirectory = computed(() => state.value?.gameDirectory || '')
   const diagnosticsText = computed(() => state.value?.diagnosticsText || '')
+  const dashboard = computed<LauncherDashboard>(() => state.value?.dashboard ?? createDefaultDashboard())
+  const nation = computed(() => dashboard.value.nation)
+  const nationStats = computed(() => dashboard.value.nationStats)
+  const playerStats = computed(() => dashboard.value.playerStats)
+  const recentActivity = computed(() => dashboard.value.recentActivity || [])
+  const walletBalance = computed(() => Number(dashboard.value.walletBalance || playerStats.value.currentBalance || 0))
 
   function syncSessionState() {
     session.setLastState(state.value)
@@ -109,7 +120,6 @@ export const useLauncherStore = defineStore('launcher', () => {
     }
 
     toasts.value = [...toasts.value, toast]
-
     const timeoutMs = tone === 'error' ? 5200 : tone === 'warning' ? 4200 : 3200
     window.setTimeout(() => dismissToast(toast.id), timeoutMs)
   }
@@ -132,7 +142,7 @@ export const useLauncherStore = defineStore('launcher', () => {
       state.value = await request<LauncherState>('GET', '/api/state')
       syncSessionState()
     } catch {
-      // silent
+      // silent poll
     }
   }
 
@@ -313,6 +323,12 @@ export const useLauncherStore = defineStore('launcher', () => {
     dataDirectory,
     gameDirectory,
     diagnosticsText,
+    dashboard,
+    nation,
+    nationStats,
+    playerStats,
+    recentActivity,
+    walletBalance,
     initializeApp,
     dispose,
     login,

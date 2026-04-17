@@ -1,6 +1,6 @@
 {
   "name": "voidrp-electron-bridge",
-  "version": "2.1.0",
+  "version": "2.3.0",
   "description": "VoidRP Launcher strategic migration: Electron + Vue UI with embedded C# launcher core",
   "main": "dist-electron/main.js",
   "author": "OpenAI for VoidRP",

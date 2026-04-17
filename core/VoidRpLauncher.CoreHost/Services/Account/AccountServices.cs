@@ -62,6 +62,14 @@ public sealed class LauncherAccountApiClient
         return await ReadJsonAsync<IssuePlayTicketResponseDto>(response, cancellationToken);
     }
 
+    public async Task<LauncherDashboardResponseDto> GetLauncherDashboardAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "launcher/me/dashboard");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<LauncherDashboardResponseDto>(response, cancellationToken);
+    }
+
     private async Task<T> PostJsonAsync<T>(string url, object payload, CancellationToken cancellationToken)
     {
         using var response = await _httpClient.PostAsJsonAsync(url, payload, JsonOptions, cancellationToken);
@@ -225,6 +233,12 @@ public sealed class LauncherAuthSessionService
         return await _apiClient.RequestPlayTicketAsync(_snapshot.AccessToken, launcherVersion, launcherPlatform, cancellationToken);
     }
 
+    public async Task<LauncherDashboardResponseDto> GetDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetLauncherDashboardAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
     public async Task<RevokeSessionsResponseDto> RevokeOtherSessionsAsync(CancellationToken cancellationToken = default)
     {
         if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken) || string.IsNullOrWhiteSpace(_snapshot.RefreshToken)) throw new InvalidOperationException("Launcher user is not authenticated");
@@ -287,6 +301,8 @@ public sealed class AuthenticatedLaunchService
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
     }
 }
+
+
 
 
 

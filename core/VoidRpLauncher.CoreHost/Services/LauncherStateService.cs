@@ -1,3 +1,4 @@
+using System.Linq;
 using VoidRpLauncher.CoreHost.Configuration;
 using VoidRpLauncher.CoreHost.Contracts;
 using VoidRpLauncher.CoreHost.Models.Account;
@@ -15,6 +16,7 @@ public sealed class LauncherStateService
     private string _emailVerifiedText = "Требуется вход";
     private LauncherProgressDto _progress = new();
     private LauncherAuthSnapshot? _snapshot;
+    private LauncherDashboardResponseDto? _dashboard;
 
     public bool IsInitialized
     {
@@ -79,6 +81,7 @@ public sealed class LauncherStateService
             _snapshot = snapshot;
             if (snapshot?.IsAuthenticated != true)
             {
+                _dashboard = null;
                 _accountPrimaryText = "Гость";
                 _accountSecondaryText = "Войдите, чтобы запустить игру";
                 _emailVerifiedText = "Требуется вход";
@@ -90,6 +93,14 @@ public sealed class LauncherStateService
                 : snapshot.PlayerAccount.MinecraftNickname;
             _accountSecondaryText = $"{snapshot.User.SiteLogin} • {snapshot.User.Email}";
             _emailVerifiedText = snapshot.User.EmailVerified ? "Почта подтверждена" : "Почта не подтверждена";
+        }
+    }
+
+    public void ApplyDashboard(LauncherDashboardResponseDto? dashboard)
+    {
+        lock (_lock)
+        {
+            _dashboard = dashboard;
         }
     }
 
@@ -131,9 +142,80 @@ public sealed class LauncherStateService
                     RegisterUrl = endpoints.RegisterUrl,
                     ForgotPasswordUrl = endpoints.ForgotPasswordUrl,
                     VerifyEmailUrl = endpoints.VerifyEmailUrl
-                }
+                },
+                Dashboard = BuildDashboardDto(_dashboard)
             };
         }
+    }
+
+    private static LauncherDashboardDto BuildDashboardDto(LauncherDashboardResponseDto? dashboard)
+    {
+        if (dashboard is null)
+        {
+            return new LauncherDashboardDto();
+        }
+
+        return new LauncherDashboardDto
+        {
+            WalletBalance = dashboard.WalletBalance,
+            Nation = dashboard.Nation is null
+                ? new LauncherDashboardNationDto()
+                : new LauncherDashboardNationDto
+                {
+                    Id = dashboard.Nation.Id ?? string.Empty,
+                    Slug = dashboard.Nation.Slug ?? string.Empty,
+                    Title = dashboard.Nation.Title ?? string.Empty,
+                    Tag = dashboard.Nation.Tag ?? string.Empty,
+                    AccentColor = dashboard.Nation.AccentColor ?? string.Empty,
+                    Role = dashboard.Nation.Role ?? string.Empty,
+                    IconUrl = dashboard.Nation.IconUrl ?? string.Empty,
+                    IconPreviewUrl = dashboard.Nation.IconPreviewUrl ?? string.Empty,
+                    BannerUrl = dashboard.Nation.BannerUrl ?? string.Empty,
+                    BannerPreviewUrl = dashboard.Nation.BannerPreviewUrl ?? string.Empty,
+                    BackgroundUrl = dashboard.Nation.BackgroundUrl ?? string.Empty,
+                    BackgroundPreviewUrl = dashboard.Nation.BackgroundPreviewUrl ?? string.Empty,
+                    AllianceTitle = dashboard.Nation.AllianceTitle ?? string.Empty,
+                    AllianceTag = dashboard.Nation.AllianceTag ?? string.Empty,
+                },
+            NationStats = dashboard.NationStats is null
+                ? new LauncherDashboardNationStatsDto()
+                : new LauncherDashboardNationStatsDto
+                {
+                    TreasuryBalance = dashboard.NationStats.TreasuryBalance,
+                    TerritoryPoints = dashboard.NationStats.TerritoryPoints,
+                    TotalPlaytimeMinutes = dashboard.NationStats.TotalPlaytimeMinutes,
+                    PvpKills = dashboard.NationStats.PvpKills,
+                    MobKills = dashboard.NationStats.MobKills,
+                    BossKills = dashboard.NationStats.BossKills,
+                    Deaths = dashboard.NationStats.Deaths,
+                    BlocksPlaced = dashboard.NationStats.BlocksPlaced,
+                    BlocksBroken = dashboard.NationStats.BlocksBroken,
+                    EventsCompleted = dashboard.NationStats.EventsCompleted,
+                    PrestigeScore = dashboard.NationStats.PrestigeScore,
+                },
+            PlayerStats = dashboard.PlayerStats is null
+                ? new LauncherDashboardPlayerStatsDto()
+                : new LauncherDashboardPlayerStatsDto
+                {
+                    MinecraftNickname = dashboard.PlayerStats.MinecraftNickname ?? string.Empty,
+                    TotalPlaytimeMinutes = dashboard.PlayerStats.TotalPlaytimeMinutes,
+                    PvpKills = dashboard.PlayerStats.PvpKills,
+                    MobKills = dashboard.PlayerStats.MobKills,
+                    Deaths = dashboard.PlayerStats.Deaths,
+                    BlocksPlaced = dashboard.PlayerStats.BlocksPlaced,
+                    BlocksBroken = dashboard.PlayerStats.BlocksBroken,
+                    CurrentBalance = dashboard.PlayerStats.CurrentBalance,
+                    Source = dashboard.PlayerStats.Source ?? string.Empty,
+                    LastSeenAt = dashboard.PlayerStats.LastSeenAt,
+                    LastSyncedAt = dashboard.PlayerStats.LastSyncedAt,
+                },
+            RecentActivity = dashboard.RecentActivity?.Select(item => new LauncherDashboardActivityDto
+            {
+                EventType = item.EventType ?? string.Empty,
+                Message = item.Message ?? string.Empty,
+                CreatedAt = item.CreatedAt
+            }).ToList() ?? new List<LauncherDashboardActivityDto>()
+        };
     }
 
     private static double ClampPercent(double value)
@@ -143,6 +225,3 @@ public sealed class LauncherStateService
         return value;
     }
 }
-
-
-
