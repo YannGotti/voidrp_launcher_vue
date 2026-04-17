@@ -1,0 +1,34 @@
+appId: ru.voidrp.launcher.electron
+productName: VoidRP Launcher
+asar: true
+
+files:
+  - dist-renderer/**
+  - dist-electron/**
+
+extraResources:
+  - from: build/core/win-x64
+    to: core/win-x64
+    filter:
+      - "**/*"
+
+directories:
+  output: dist-release
+  buildResources: build-resources
+
+publish:
+  provider: generic
+  url: https://void-rp.ru/launcher/electron
+
+win:
+  executableName: VoidRpLauncher
+  target:
+    - target: portable
+      arch:
+        - x64
+  verifyUpdateCodeSignature: false
+  signAndEditExecutable: false
+  forceCodeSigning: false
+
+portable:
+  artifactName: VoidRP-Launcher-${version}-portable.${ext}
