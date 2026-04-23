@@ -72,6 +72,25 @@ public sealed class AccountSecurityReadDto
     [JsonPropertyName("legacy_ready")] public bool LegacyReady { get; set; }
 }
 
+public sealed class PlayerSkinReadDto
+{
+    [JsonPropertyName("has_skin")] public bool HasSkin { get; set; }
+    [JsonPropertyName("model_variant")] public string ModelVariant { get; set; } = string.Empty;
+    [JsonPropertyName("skin_url")] public string SkinUrl { get; set; } = string.Empty;
+    [JsonPropertyName("head_preview_url")] public string HeadPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("body_preview_url")] public string BodyPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("width")] public int? Width { get; set; }
+    [JsonPropertyName("height")] public int? Height { get; set; }
+    [JsonPropertyName("sha256")] public string Sha256 { get; set; } = string.Empty;
+    [JsonPropertyName("updated_at")] public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+public sealed class PlayerSkinOperationResponseDto
+{
+    [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+    [JsonPropertyName("skin")] public PlayerSkinReadDto Skin { get; set; } = new();
+}
+
 public sealed class TokenPairResponseDto
 {
     [JsonPropertyName("access_token")] public string AccessToken { get; set; } = string.Empty;
@@ -176,8 +195,3 @@ public sealed class LauncherTokenEnvelope
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
-
-
-
-
-

@@ -1,4 +1,5 @@
 using System.Threading;
+using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Configuration;
 using VoidRpLauncher.CoreHost.Contracts;
 using VoidRpLauncher.CoreHost.Models;
@@ -245,6 +246,53 @@ public sealed class LauncherFacadeService
             }
         });
 
+    public async Task<LauncherPlayerSkinDto> GetSkinAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var skin = await _authSessionService.GetSkinAsync(cancellationToken);
+            return ToDesktopSkin(skin);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Skin", $"Failed to load player skin: {ex.Message}");
+            return new LauncherPlayerSkinDto();
+        }
+    }
+
+    public async Task<LauncherPlayerSkinOperationDto> UploadSkinAsync(IFormFile file, string modelVariant, CancellationToken cancellationToken = default)
+    {
+        if (file is null || file.Length <= 0)
+        {
+            return LauncherPlayerSkinOperationDto.Failure("Файл скина не выбран.");
+        }
+
+        try
+        {
+            var response = await _authSessionService.UploadSkinAsync(file, modelVariant, cancellationToken);
+            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.AppendException("Skin", ex);
+            return LauncherPlayerSkinOperationDto.Failure(ex.Message);
+        }
+    }
+
+    public async Task<LauncherPlayerSkinOperationDto> DeleteSkinAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _authSessionService.DeleteSkinAsync(cancellationToken);
+            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.AppendException("Skin", ex);
+            return LauncherPlayerSkinOperationDto.Failure(ex.Message);
+        }
+    }
+
     public OperationResponseDto SaveSettings(int maxRamMb)
     {
         try
@@ -327,7 +375,6 @@ public sealed class LauncherFacadeService
         return value;
     }
 
-
     private async Task<LauncherDashboardResponseDto?> TryLoadDashboardAsync(CancellationToken cancellationToken)
     {
         try
@@ -339,5 +386,26 @@ public sealed class LauncherFacadeService
             _diagnostics.Warn("Dashboard", $"Launcher dashboard load failed: {ex.Message}");
             return null;
         }
+    }
+
+    private static LauncherPlayerSkinDto ToDesktopSkin(PlayerSkinReadDto? skin)
+    {
+        if (skin is null)
+        {
+            return new LauncherPlayerSkinDto();
+        }
+
+        return new LauncherPlayerSkinDto
+        {
+            HasSkin = skin.HasSkin,
+            ModelVariant = string.IsNullOrWhiteSpace(skin.ModelVariant) ? "classic" : skin.ModelVariant,
+            SkinUrl = skin.SkinUrl ?? string.Empty,
+            HeadPreviewUrl = skin.HeadPreviewUrl ?? string.Empty,
+            BodyPreviewUrl = skin.BodyPreviewUrl ?? string.Empty,
+            Sha256 = skin.Sha256 ?? string.Empty,
+            Width = skin.Width ?? 0,
+            Height = skin.Height ?? 0,
+            UpdatedAt = skin.UpdatedAt,
+        };
     }
 }

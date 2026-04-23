@@ -1,17 +1,26 @@
-export interface LauncherProgress {
+export type ToastTone = 'info' | 'success' | 'warning' | 'error'
+
+export interface ToastItem {
+  id: string
+  title: string
+  message: string
+  tone: ToastTone
+}
+
+export interface LauncherProgressDto {
   visible: boolean
   title: string
   details: string
   percent: number
 }
 
-export interface LauncherLinks {
+export interface LauncherLinksDto {
   registerUrl: string
   forgotPasswordUrl: string
   verifyEmailUrl: string
 }
 
-export interface LauncherDashboardNation {
+export interface LauncherDashboardNationDto {
   id: string
   slug: string
   title: string
@@ -28,7 +37,7 @@ export interface LauncherDashboardNation {
   allianceTag: string
 }
 
-export interface LauncherDashboardNationStats {
+export interface LauncherDashboardNationStatsDto {
   treasuryBalance: number
   territoryPoints: number
   totalPlaytimeMinutes: number
@@ -42,7 +51,7 @@ export interface LauncherDashboardNationStats {
   prestigeScore: number
 }
 
-export interface LauncherDashboardPlayerStats {
+export interface LauncherDashboardPlayerStatsDto {
   minecraftNickname: string
   totalPlaytimeMinutes: number
   pvpKills: number
@@ -56,21 +65,21 @@ export interface LauncherDashboardPlayerStats {
   lastSyncedAt: string | null
 }
 
-export interface LauncherDashboardActivity {
+export interface LauncherDashboardActivityDto {
   eventType: string
   message: string
   createdAt: string | null
 }
 
-export interface LauncherDashboard {
-  nation: LauncherDashboardNation
-  nationStats: LauncherDashboardNationStats
-  playerStats: LauncherDashboardPlayerStats
-  recentActivity: LauncherDashboardActivity[]
+export interface LauncherDashboardDto {
+  nation: LauncherDashboardNationDto
+  nationStats: LauncherDashboardNationStatsDto
+  playerStats: LauncherDashboardPlayerStatsDto
+  recentActivity: LauncherDashboardActivityDto[]
   walletBalance: number
 }
 
-export interface LauncherState {
+export interface LauncherStateDto {
   initialized: boolean
   isBusy: boolean
   isAuthenticated: boolean
@@ -85,115 +94,41 @@ export interface LauncherState {
   dataDirectory: string
   gameDirectory: string
   diagnosticsText: string
-  progress: LauncherProgress
-  links: LauncherLinks
-  dashboard: LauncherDashboard
+  progress: LauncherProgressDto
+  links: LauncherLinksDto
+  dashboard: LauncherDashboardDto
 }
 
-export interface OperationResponse {
+export interface OperationResponseDto {
   ok: boolean
   message: string
   pendingElectronExit: boolean
-  state: LauncherState
+  state: LauncherStateDto
 }
 
-export interface UpdaterStatus {
-  available: boolean
-  downloading: boolean
-  downloaded: boolean
-  progressPercent: number
+export interface PlayerSkinDto {
+  hasSkin: boolean
+  modelVariant: string
+  skinUrl: string
+  headPreviewUrl: string
+  bodyPreviewUrl: string
+  sha256: string
+  width: number
+  height: number
+  updatedAt: string | null
+}
+
+export interface PlayerSkinOperationDto {
+  ok: boolean
   message: string
+  skin: PlayerSkinDto
 }
 
-export interface CoreStatus {
-  kind?: string
-  running: boolean
-  baseUrl: string
-  executablePath?: string
-  lastError?: string
-  message?: string
+export interface LoginCommandDto {
+  login: string
+  password: string
 }
 
-export interface DesktopBridge {
-  request<T = unknown>(method: string, path: string, body?: unknown): Promise<T>
-  getCoreStatus(): Promise<CoreStatus>
-  onUpdaterStatus(callback: (payload: UpdaterStatus) => void): () => void
-  onCoreStatus(callback: (payload: CoreStatus) => void): () => void
-  checkForShellUpdates(): Promise<{ ok: boolean; message: string }>
-  downloadAndInstallShellUpdate(): Promise<{ ok: boolean; message: string }>
-  openExternal(url?: string): Promise<boolean>
-  openPath(targetPath?: string): Promise<string>
-}
-
-export function createDefaultUpdaterStatus(): UpdaterStatus {
-  return {
-    available: false,
-    downloading: false,
-    downloaded: false,
-    progressPercent: 0,
-    message: 'Проверка обновлений оболочки ещё не выполнялась.'
-  }
-}
-
-export function createDefaultCoreStatus(): CoreStatus {
-  return {
-    running: false,
-    baseUrl: 'http://127.0.0.1:38765',
-    message: 'Ядро ещё не запускалось.'
-  }
-}
-
-export function createDefaultDashboard(): LauncherDashboard {
-  return {
-    nation: {
-      id: '',
-      slug: '',
-      title: '',
-      tag: '',
-      accentColor: '',
-      role: '',
-      iconUrl: '',
-      iconPreviewUrl: '',
-      bannerUrl: '',
-      bannerPreviewUrl: '',
-      backgroundUrl: '',
-      backgroundPreviewUrl: '',
-      allianceTitle: '',
-      allianceTag: ''
-    },
-    nationStats: {
-      treasuryBalance: 0,
-      territoryPoints: 0,
-      totalPlaytimeMinutes: 0,
-      pvpKills: 0,
-      mobKills: 0,
-      bossKills: 0,
-      deaths: 0,
-      blocksPlaced: 0,
-      blocksBroken: 0,
-      eventsCompleted: 0,
-      prestigeScore: 0
-    },
-    playerStats: {
-      minecraftNickname: '',
-      totalPlaytimeMinutes: 0,
-      pvpKills: 0,
-      mobKills: 0,
-      deaths: 0,
-      blocksPlaced: 0,
-      blocksBroken: 0,
-      currentBalance: 0,
-      source: '',
-      lastSeenAt: null,
-      lastSyncedAt: null
-    },
-    recentActivity: [],
-    walletBalance: 0
-  }
-}
-
-declare global {
-  interface Window {
-    desktop?: DesktopBridge
-  }
+export interface SettingsUpdateDto {
+  maxRamMb: number
 }

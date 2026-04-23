@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Models;
 using VoidRpLauncher.CoreHost.Models.Account;
 using VoidRpLauncher.CoreHost.Services;
@@ -68,6 +69,44 @@ public sealed class LauncherAccountApiClient
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         return await ReadJsonAsync<LauncherDashboardResponseDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinReadDto> GetSkinAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinReadDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> UploadSkinAsync(
+        string accessToken,
+        IFormFile file,
+        string modelVariant,
+        CancellationToken cancellationToken = default)
+    {
+        if (file is null) throw new InvalidOperationException("Skin file was not provided.");
+
+        using var multipart = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream();
+        using var content = new StreamContent(stream);
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse(string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType);
+        multipart.Add(content, "file", file.FileName);
+        multipart.Add(new StringContent(string.IsNullOrWhiteSpace(modelVariant) ? "classic" : modelVariant), "model_variant");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = multipart;
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinOperationResponseDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> DeleteSkinAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinOperationResponseDto>(response, cancellationToken);
     }
 
     private async Task<T> PostJsonAsync<T>(string url, object payload, CancellationToken cancellationToken)
@@ -268,6 +307,24 @@ public sealed class LauncherAuthSessionService
     {
         if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
         return await _apiClient.GetLauncherDashboardAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
+    public async Task<PlayerSkinReadDto> GetSkinAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetSkinAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> UploadSkinAsync(IFormFile file, string modelVariant, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.UploadSkinAsync(_snapshot.AccessToken, file, modelVariant, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> DeleteSkinAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.DeleteSkinAsync(_snapshot.AccessToken, cancellationToken);
     }
 
     public async Task<RevokeSessionsResponseDto> RevokeOtherSessionsAsync(CancellationToken cancellationToken = default)

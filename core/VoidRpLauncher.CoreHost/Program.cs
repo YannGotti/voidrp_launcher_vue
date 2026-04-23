@@ -64,7 +64,6 @@ app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { ok = true }));
 
-// ВАЖНО: не привязываем долгие launcher-операции к жизни HTTP-запроса UI
 app.MapGet("/api/bootstrap", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.InitializeAsync(CancellationToken.None)));
 
@@ -94,5 +93,29 @@ app.MapPost("/api/settings/reset", (LauncherFacadeService facade) =>
 
 app.MapPost("/api/diagnostics/clear", (LauncherFacadeService facade) =>
     Results.Ok(facade.ClearDiagnostics()));
+
+app.MapGet("/api/skin", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.GetSkinAsync(CancellationToken.None)));
+
+app.MapPost("/api/skin", async (HttpRequest request, LauncherFacadeService facade) =>
+{
+    var form = await request.ReadFormAsync(CancellationToken.None);
+    var file = form.Files["file"];
+    var modelVariant = form.TryGetValue("modelVariant", out var rawModelVariant)
+        ? rawModelVariant.ToString()
+        : form.TryGetValue("model_variant", out var rawAltModelVariant)
+            ? rawAltModelVariant.ToString()
+            : "classic";
+
+    if (file is null)
+    {
+        return Results.Ok(LauncherPlayerSkinOperationDto.Failure("Файл скина не передан."));
+    }
+
+    return Results.Ok(await facade.UploadSkinAsync(file, modelVariant, CancellationToken.None));
+});
+
+app.MapDelete("/api/skin", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.DeleteSkinAsync(CancellationToken.None)));
 
 app.Run();

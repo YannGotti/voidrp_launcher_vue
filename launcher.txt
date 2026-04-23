@@ -253,6 +253,32 @@ public sealed class OperationResponseDto
         => new() { Ok = false, Message = message, State = state, PendingElectronExit = false };
 }
 
+public sealed class LauncherPlayerSkinDto
+{
+    public bool HasSkin { get; set; }
+    public string ModelVariant { get; set; } = "classic";
+    public string SkinUrl { get; set; } = string.Empty;
+    public string HeadPreviewUrl { get; set; } = string.Empty;
+    public string BodyPreviewUrl { get; set; } = string.Empty;
+    public string Sha256 { get; set; } = string.Empty;
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+public sealed class LauncherPlayerSkinOperationDto
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public LauncherPlayerSkinDto Skin { get; set; } = new();
+
+    public static LauncherPlayerSkinOperationDto Success(LauncherPlayerSkinDto skin, string message = "")
+        => new() { Ok = true, Message = message, Skin = skin ?? new LauncherPlayerSkinDto() };
+
+    public static LauncherPlayerSkinOperationDto Failure(string message, LauncherPlayerSkinDto? skin = null)
+        => new() { Ok = false, Message = message, Skin = skin ?? new LauncherPlayerSkinDto() };
+}
+
 public sealed class LoginCommandDto
 {
     public string Login { get; set; } = string.Empty;
@@ -341,6 +367,25 @@ public sealed class AccountSecurityReadDto
     [JsonPropertyName("must_use_launcher")] public bool MustUseLauncher { get; set; }
     [JsonPropertyName("legacy_hash_present")] public bool LegacyHashPresent { get; set; }
     [JsonPropertyName("legacy_ready")] public bool LegacyReady { get; set; }
+}
+
+public sealed class PlayerSkinReadDto
+{
+    [JsonPropertyName("has_skin")] public bool HasSkin { get; set; }
+    [JsonPropertyName("model_variant")] public string ModelVariant { get; set; } = string.Empty;
+    [JsonPropertyName("skin_url")] public string SkinUrl { get; set; } = string.Empty;
+    [JsonPropertyName("head_preview_url")] public string HeadPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("body_preview_url")] public string BodyPreviewUrl { get; set; } = string.Empty;
+    [JsonPropertyName("width")] public int? Width { get; set; }
+    [JsonPropertyName("height")] public int? Height { get; set; }
+    [JsonPropertyName("sha256")] public string Sha256 { get; set; } = string.Empty;
+    [JsonPropertyName("updated_at")] public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+public sealed class PlayerSkinOperationResponseDto
+{
+    [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+    [JsonPropertyName("skin")] public PlayerSkinReadDto Skin { get; set; } = new();
 }
 
 public sealed class TokenPairResponseDto
@@ -447,11 +492,6 @@ public sealed class LauncherTokenEnvelope
 {
     public string RefreshToken { get; set; } = string.Empty;
 }
-
-
-
-
-
 
 
 
@@ -614,7 +654,6 @@ app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { ok = true }));
 
-// ВАЖНО: не привязываем долгие launcher-операции к жизни HTTP-запроса UI
 app.MapGet("/api/bootstrap", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.InitializeAsync(CancellationToken.None)));
 
@@ -645,7 +684,32 @@ app.MapPost("/api/settings/reset", (LauncherFacadeService facade) =>
 app.MapPost("/api/diagnostics/clear", (LauncherFacadeService facade) =>
     Results.Ok(facade.ClearDiagnostics()));
 
+app.MapGet("/api/skin", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.GetSkinAsync(CancellationToken.None)));
+
+app.MapPost("/api/skin", async (HttpRequest request, LauncherFacadeService facade) =>
+{
+    var form = await request.ReadFormAsync(CancellationToken.None);
+    var file = form.Files["file"];
+    var modelVariant = form.TryGetValue("modelVariant", out var rawModelVariant)
+        ? rawModelVariant.ToString()
+        : form.TryGetValue("model_variant", out var rawAltModelVariant)
+            ? rawAltModelVariant.ToString()
+            : "classic";
+
+    if (file is null)
+    {
+        return Results.Ok(LauncherPlayerSkinOperationDto.Failure("Файл скина не передан."));
+    }
+
+    return Results.Ok(await facade.UploadSkinAsync(file, modelVariant, CancellationToken.None));
+});
+
+app.MapDelete("/api/skin", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.DeleteSkinAsync(CancellationToken.None)));
+
 app.Run();
+
 
 
 ------------------------------------------------------------
@@ -657,6 +721,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Models;
 using VoidRpLauncher.CoreHost.Models.Account;
 using VoidRpLauncher.CoreHost.Services;
@@ -721,6 +786,44 @@ public sealed class LauncherAccountApiClient
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         return await ReadJsonAsync<LauncherDashboardResponseDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinReadDto> GetSkinAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinReadDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> UploadSkinAsync(
+        string accessToken,
+        IFormFile file,
+        string modelVariant,
+        CancellationToken cancellationToken = default)
+    {
+        if (file is null) throw new InvalidOperationException("Skin file was not provided.");
+
+        using var multipart = new MultipartFormDataContent();
+        await using var stream = file.OpenReadStream();
+        using var content = new StreamContent(stream);
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse(string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType);
+        multipart.Add(content, "file", file.FileName);
+        multipart.Add(new StringContent(string.IsNullOrWhiteSpace(modelVariant) ? "classic" : modelVariant), "model_variant");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = multipart;
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinOperationResponseDto>(response, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> DeleteSkinAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, "account/skin");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<PlayerSkinOperationResponseDto>(response, cancellationToken);
     }
 
     private async Task<T> PostJsonAsync<T>(string url, object payload, CancellationToken cancellationToken)
@@ -923,6 +1026,24 @@ public sealed class LauncherAuthSessionService
         return await _apiClient.GetLauncherDashboardAsync(_snapshot.AccessToken, cancellationToken);
     }
 
+    public async Task<PlayerSkinReadDto> GetSkinAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetSkinAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> UploadSkinAsync(IFormFile file, string modelVariant, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.UploadSkinAsync(_snapshot.AccessToken, file, modelVariant, cancellationToken);
+    }
+
+    public async Task<PlayerSkinOperationResponseDto> DeleteSkinAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.DeleteSkinAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
     public async Task<RevokeSessionsResponseDto> RevokeOtherSessionsAsync(CancellationToken cancellationToken = default)
     {
         if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken) || string.IsNullOrWhiteSpace(_snapshot.RefreshToken)) throw new InvalidOperationException("Launcher user is not authenticated");
@@ -985,6 +1106,7 @@ public sealed class AuthenticatedLaunchService
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
     }
 }
+
 
 
 ------------------------------------------------------------
@@ -1886,6 +2008,7 @@ public sealed class DiagnosticsService
 Файл: E:\voidrp_launcher_vue\core\VoidRpLauncher.CoreHost\Services\LauncherFacadeService.cs
 ------------------------------------------------------------
 using System.Threading;
+using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Configuration;
 using VoidRpLauncher.CoreHost.Contracts;
 using VoidRpLauncher.CoreHost.Models;
@@ -2132,6 +2255,53 @@ public sealed class LauncherFacadeService
             }
         });
 
+    public async Task<LauncherPlayerSkinDto> GetSkinAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var skin = await _authSessionService.GetSkinAsync(cancellationToken);
+            return ToDesktopSkin(skin);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Skin", $"Failed to load player skin: {ex.Message}");
+            return new LauncherPlayerSkinDto();
+        }
+    }
+
+    public async Task<LauncherPlayerSkinOperationDto> UploadSkinAsync(IFormFile file, string modelVariant, CancellationToken cancellationToken = default)
+    {
+        if (file is null || file.Length <= 0)
+        {
+            return LauncherPlayerSkinOperationDto.Failure("Файл скина не выбран.");
+        }
+
+        try
+        {
+            var response = await _authSessionService.UploadSkinAsync(file, modelVariant, cancellationToken);
+            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.AppendException("Skin", ex);
+            return LauncherPlayerSkinOperationDto.Failure(ex.Message);
+        }
+    }
+
+    public async Task<LauncherPlayerSkinOperationDto> DeleteSkinAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _authSessionService.DeleteSkinAsync(cancellationToken);
+            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.AppendException("Skin", ex);
+            return LauncherPlayerSkinOperationDto.Failure(ex.Message);
+        }
+    }
+
     public OperationResponseDto SaveSettings(int maxRamMb)
     {
         try
@@ -2214,7 +2384,6 @@ public sealed class LauncherFacadeService
         return value;
     }
 
-
     private async Task<LauncherDashboardResponseDto?> TryLoadDashboardAsync(CancellationToken cancellationToken)
     {
         try
@@ -2226,6 +2395,27 @@ public sealed class LauncherFacadeService
             _diagnostics.Warn("Dashboard", $"Launcher dashboard load failed: {ex.Message}");
             return null;
         }
+    }
+
+    private static LauncherPlayerSkinDto ToDesktopSkin(PlayerSkinReadDto? skin)
+    {
+        if (skin is null)
+        {
+            return new LauncherPlayerSkinDto();
+        }
+
+        return new LauncherPlayerSkinDto
+        {
+            HasSkin = skin.HasSkin,
+            ModelVariant = string.IsNullOrWhiteSpace(skin.ModelVariant) ? "classic" : skin.ModelVariant,
+            SkinUrl = skin.SkinUrl ?? string.Empty,
+            HeadPreviewUrl = skin.HeadPreviewUrl ?? string.Empty,
+            BodyPreviewUrl = skin.BodyPreviewUrl ?? string.Empty,
+            Sha256 = skin.Sha256 ?? string.Empty,
+            Width = skin.Width ?? 0,
+            Height = skin.Height ?? 0,
+            UpdatedAt = skin.UpdatedAt,
+        };
     }
 }
 
@@ -3043,7 +3233,7 @@ portable:
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self' http://127.0.0.1:5173;
-        img-src 'self' data: https://api.void-rp.ru https://void-rp.ru;
+        img-src 'self' data: blob: https://api.void-rp.ru https://void-rp.ru;
         style-src 'self' 'unsafe-inline';
         script-src 'self' 'unsafe-inline' http://127.0.0.1:5173;
         connect-src 'self' http://127.0.0.1:5173 http://127.0.0.1:38765 https://api.void-rp.ru https://void-rp.ru;
@@ -9824,7 +10014,7 @@ portable:
 ------------------------------------------------------------
 {
   "name": "voidrp-electron-bridge",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "VoidRP Launcher strategic migration: Electron + Vue UI with embedded C# launcher core",
   "main": "dist-electron/main.js",
   "author": "OpenAI for VoidRP",
@@ -10147,11 +10337,16 @@ body {
 Файл: E:\voidrp_launcher_vue\src\views\AccountView.vue
 ------------------------------------------------------------
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { useLauncherStore } from '../stores/launcher'
 
 const launcher = useLauncherStore()
 const diagnosticsText = computed(() => launcher.diagnosticsText?.trim() || 'Диагностика пока пуста.')
+
+const selectedFile = ref<File | null>(null)
+const selectedFileUrl = ref('')
+const selectedModelVariant = ref('classic')
+const skinBusy = ref(false)
 
 function formatNumber(value: number | string | null | undefined) {
   const numeric = Number(value ?? 0)
@@ -10167,6 +10362,52 @@ function formatDate(value: string | null | undefined) {
     timeStyle: 'short'
   }).format(date)
 }
+
+function onSelectFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input?.files?.[0] || null
+  selectedFile.value = file
+
+  if (selectedFileUrl.value) {
+    URL.revokeObjectURL(selectedFileUrl.value)
+    selectedFileUrl.value = ''
+  }
+
+  if (file) {
+    selectedFileUrl.value = URL.createObjectURL(file)
+  }
+}
+
+async function uploadSkin() {
+  if (!selectedFile.value || skinBusy.value) return
+  skinBusy.value = true
+  try {
+    await launcher.uploadSkin(selectedFile.value, selectedModelVariant.value)
+    selectedFile.value = null
+    if (selectedFileUrl.value) {
+      URL.revokeObjectURL(selectedFileUrl.value)
+      selectedFileUrl.value = ''
+    }
+  } finally {
+    skinBusy.value = false
+  }
+}
+
+async function deleteSkin() {
+  if (skinBusy.value) return
+  skinBusy.value = true
+  try {
+    await launcher.deleteSkin()
+  } finally {
+    skinBusy.value = false
+  }
+}
+
+onBeforeUnmount(() => {
+  if (selectedFileUrl.value) {
+    URL.revokeObjectURL(selectedFileUrl.value)
+  }
+})
 </script>
 
 <template>
@@ -10195,91 +10436,222 @@ function formatDate(value: string | null | undefined) {
     </section>
 
     <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Личная статистика</p>
-          <h2 class="mt-1 text-lg font-semibold">Игровые показатели</h2>
+          <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Скин</p>
+          <h2 class="mt-1 text-lg font-semibold">Внешний вид персонажа</h2>
+          <p class="mt-1 text-sm text-white/55">
+            Загрузите PNG 64x64 или 64x32. Скин хранится на аккаунте и применяется при входе на сервер.
+          </p>
         </div>
+
         <div class="text-right text-xs text-white/45">
-          <p>Последний онлайн: {{ formatDate(launcher.playerStats.lastSeenAt) }}</p>
-          <p class="mt-1">Синхронизация: {{ formatDate(launcher.playerStats.lastSyncedAt) }}</p>
+          <p>Текущая модель: {{ launcher.skin.modelVariant || 'classic' }}</p>
+          <p class="mt-1">Обновлён: {{ formatDate(launcher.skin.updatedAt) }}</p>
         </div>
       </div>
 
-      <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">PvP</p>
+      <div class="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div class="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
+          <div class="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+            <div class="rounded-[20px] border border-white/10 bg-[#060912] p-4">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-white/35">Текущий рендер</p>
+
+              <div class="mt-3 flex min-h-[280px] items-center justify-center rounded-[16px] border border-white/10 bg-black/20 p-4">
+                <img
+                  v-if="launcher.skin.bodyPreviewUrl"
+                  :src="launcher.skin.bodyPreviewUrl"
+                  alt="skin body preview"
+                  class="max-h-[260px] object-contain"
+                />
+                <div v-else class="text-center text-sm text-white/45">
+                  Скин ещё не загружен
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center justify-center">
+                <div class="h-[84px] w-[84px] overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <img
+                    v-if="launcher.skin.headPreviewUrl"
+                    :src="launcher.skin.headPreviewUrl"
+                    alt="skin head preview"
+                    class="h-full w-full object-cover"
+                  />
+                  <div v-else class="flex h-full w-full items-center justify-center text-xs text-white/35">Нет</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="rounded-[18px] border border-white/10 bg-white/[0.03] p-4">
+                <p class="text-sm font-medium text-white">Новый PNG-файл</p>
+                <input
+                  class="mt-3 block w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 file:mr-3 file:rounded-xl file:border-0 file:bg-violet-500/20 file:px-3 file:py-2 file:text-sm file:font-medium file:text-violet-100"
+                  type="file"
+                  accept="image/png"
+                  @change="onSelectFile"
+                />
+
+                <div class="mt-4 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+                  <div class="rounded-[18px] border border-white/10 bg-[#060912] p-3">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-white/35">Локальный предпросмотр</p>
+                    <div class="mt-3 flex min-h-[200px] items-center justify-center rounded-[14px] border border-white/10 bg-black/20 p-3">
+                      <img
+                        v-if="selectedFileUrl"
+                        :src="selectedFileUrl"
+                        alt="selected skin"
+                        class="max-h-[180px] object-contain pixelated"
+                      />
+                      <div v-else class="text-center text-sm text-white/45">
+                        Выберите PNG-файл
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-3">
+                    <label class="block">
+                      <span class="mb-1.5 block text-xs text-white/50">Тип модели</span>
+                      <select
+                        v-model="selectedModelVariant"
+                        class="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm outline-none transition focus:border-violet-400/60 focus:bg-white/10"
+                      >
+                        <option value="classic">Classic / Steve</option>
+                        <option value="slim">Slim / Alex</option>
+                      </select>
+                    </label>
+
+                    <div class="rounded-[18px] border border-white/10 bg-white/[0.03] p-3 text-sm text-white/60">
+                      <p>Формат: PNG</p>
+                      <p class="mt-1">Размер: 64×64 или 64×32</p>
+                      <p class="mt-1">После загрузки сервер применит скин через SkinsRestorer.</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                      <button
+                        class="rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="!selectedFile || skinBusy"
+                        @click="uploadSkin"
+                      >
+                        {{ skinBusy ? 'Сохраняем...' : 'Загрузить скин' }}
+                      </button>
+
+                      <button
+                        class="rounded-2xl border border-red-400/15 bg-red-400/10 px-4 py-2.5 text-sm text-red-100 transition hover:bg-red-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="!launcher.skin.hasSkin || skinBusy"
+                        @click="deleteSkin"
+                      >
+                        Удалить скин
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-[18px] border border-white/10 bg-white/[0.03] p-4 text-sm text-white/60">
+                <p class="font-medium text-white/88">Текущий файл</p>
+                <p class="mt-2">SHA-256: {{ launcher.skin.sha256 || '—' }}</p>
+                <p class="mt-1">Размер текстуры: {{ launcher.skin.width || '—' }} × {{ launcher.skin.height || '—' }}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.mobKills) }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Мобы</p>
-        </div>
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.deaths) }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Смерти</p>
-        </div>
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-lg font-semibold">{{ launcher.playerStats.source || '—' }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Источник</p>
+
+        <div class="space-y-3">
+          <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Личная статистика</p>
+                <h2 class="mt-1 text-lg font-semibold">Игровые показатели</h2>
+              </div>
+              <div class="text-right text-xs text-white/45">
+                <p>Последний онлайн: {{ formatDate(launcher.playerStats.lastSeenAt) }}</p>
+                <p class="mt-1">Синхронизация: {{ formatDate(launcher.playerStats.lastSyncedAt) }}</p>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-2">
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">PvP</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.mobKills) }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Мобы</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-lg font-semibold">{{ formatNumber(launcher.playerStats.deaths) }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Смерти</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-lg font-semibold">{{ launcher.playerStats.source || '—' }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Источник</p>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksPlaced) }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Поставлено</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksBroken) }}</p>
+                <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Сломано</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+            <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Аккаунт</p>
+
+            <div class="mt-4 flex flex-wrap gap-2.5">
+              <button
+                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
+                @click="launcher.openExternal(launcher.links.verifyEmailUrl)"
+              >
+                Подтвердить почту
+              </button>
+
+              <button
+                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
+                @click="launcher.openExternal(launcher.links.forgotPasswordUrl)"
+              >
+                Сменить пароль
+              </button>
+
+              <button
+                class="rounded-2xl border border-red-400/15 bg-red-400/10 px-4 py-2.5 text-sm text-red-100 transition hover:bg-red-400/15"
+                @click="launcher.logout()"
+              >
+                Выйти из аккаунта
+              </button>
+            </div>
+          </section>
+
+          <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <p class="text-sm text-white/45">Диагностика</p>
+
+              <button
+                class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:bg-white/8 hover:text-white"
+                @click="launcher.clearDiagnostics()"
+              >
+                Очистить
+              </button>
+            </div>
+
+            <pre class="max-h-[250px] overflow-auto whitespace-pre-wrap break-all rounded-2xl border border-white/8 bg-[#060912] p-4 text-xs leading-5 text-white/65">{{ diagnosticsText }}</pre>
+          </section>
         </div>
       </div>
-
-      <div class="mt-3 grid grid-cols-2 gap-3">
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksPlaced) }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Поставлено</p>
-        </div>
-        <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <p class="text-base font-semibold">{{ formatNumber(launcher.playerStats.blocksBroken) }}</p>
-          <p class="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/40">Сломано</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
-      <p class="text-[10px] uppercase tracking-[0.22em] text-violet-300/70">Аккаунт</p>
-
-      <div class="mt-4 flex flex-wrap gap-2.5">
-        <button
-          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-          @click="launcher.openExternal(launcher.links.verifyEmailUrl)"
-        >
-          Подтвердить почту
-        </button>
-
-        <button
-          class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/8 hover:text-white"
-          @click="launcher.openExternal(launcher.links.forgotPasswordUrl)"
-        >
-          Сменить пароль
-        </button>
-
-        <button
-          class="rounded-2xl border border-red-400/15 bg-red-400/10 px-4 py-2.5 text-sm text-red-100 transition hover:bg-red-400/15"
-          @click="launcher.logout()"
-        >
-          Выйти из аккаунта
-        </button>
-      </div>
-    </section>
-
-    <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
-      <div class="mb-3 flex items-center justify-between gap-3">
-        <p class="text-sm text-white/45">Диагностика</p>
-
-        <button
-          class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:bg-white/8 hover:text-white"
-          @click="launcher.clearDiagnostics()"
-        >
-          Очистить
-        </button>
-      </div>
-
-      <pre class="max-h-[250px] overflow-auto whitespace-pre-wrap break-all rounded-2xl border border-white/8 bg-[#060912] p-4 text-xs leading-5 text-white/65">{{ diagnosticsText }}</pre>
     </section>
   </div>
 </template>
+
+<style scoped>
+.pixelated {
+  image-rendering: pixelated;
+}
+</style>
 
 
 

@@ -114,6 +114,32 @@ public sealed class OperationResponseDto
         => new() { Ok = false, Message = message, State = state, PendingElectronExit = false };
 }
 
+public sealed class LauncherPlayerSkinDto
+{
+    public bool HasSkin { get; set; }
+    public string ModelVariant { get; set; } = "classic";
+    public string SkinUrl { get; set; } = string.Empty;
+    public string HeadPreviewUrl { get; set; } = string.Empty;
+    public string BodyPreviewUrl { get; set; } = string.Empty;
+    public string Sha256 { get; set; } = string.Empty;
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+}
+
+public sealed class LauncherPlayerSkinOperationDto
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public LauncherPlayerSkinDto Skin { get; set; } = new();
+
+    public static LauncherPlayerSkinOperationDto Success(LauncherPlayerSkinDto skin, string message = "")
+        => new() { Ok = true, Message = message, Skin = skin ?? new LauncherPlayerSkinDto() };
+
+    public static LauncherPlayerSkinOperationDto Failure(string message, LauncherPlayerSkinDto? skin = null)
+        => new() { Ok = false, Message = message, Skin = skin ?? new LauncherPlayerSkinDto() };
+}
+
 public sealed class LoginCommandDto
 {
     public string Login { get; set; } = string.Empty;
