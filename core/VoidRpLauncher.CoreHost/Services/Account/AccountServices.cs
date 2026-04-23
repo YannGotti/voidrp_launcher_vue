@@ -101,6 +101,7 @@ public sealed class LauncherTokenStore
         var bytes = Encoding.UTF8.GetBytes(json);
         var protectedBytes = Protect(bytes);
         await File.WriteAllBytesAsync(_filePath, protectedBytes, cancellationToken);
+        TryRestrictFilePermissions(_filePath);
     }
 
     public async Task<string?> LoadRefreshTokenAsync(CancellationToken cancellationToken = default)
@@ -120,6 +121,20 @@ public sealed class LauncherTokenStore
 
     private static byte[] Protect(byte[] input) => OperatingSystem.IsWindows() ? ProtectedData.Protect(input, null, DataProtectionScope.CurrentUser) : input;
     private static byte[] Unprotect(byte[] input) => OperatingSystem.IsWindows() ? ProtectedData.Unprotect(input, null, DataProtectionScope.CurrentUser) : input;
+
+    private static void TryRestrictFilePermissions(string filePath)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        try
+        {
+            File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        catch
+        {
+        }
+    }
 }
 
 public sealed class LauncherPlayTicketStore
@@ -133,6 +148,7 @@ public sealed class LauncherPlayTicketStore
     {
         Directory.CreateDirectory(_directoryPath);
         await File.WriteAllTextAsync(_filePath, JsonSerializer.Serialize(envelope, new JsonSerializerOptions { WriteIndented = true }), cancellationToken);
+        TryRestrictFilePermissions(_filePath);
     }
 
     public async Task<LauncherPlayTicketEnvelope?> LoadAsync(CancellationToken cancellationToken = default)
@@ -160,7 +176,22 @@ public sealed class LauncherPlayTicketStore
         if (File.Exists(_filePath)) File.Delete(_filePath);
         return Task.CompletedTask;
     }
+
+    private static void TryRestrictFilePermissions(string filePath)
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        try
+        {
+            File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        catch
+        {
+        }
+    }
 }
+
 
 public sealed class LauncherAuthSessionService
 {
@@ -301,8 +332,3 @@ public sealed class AuthenticatedLaunchService
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
     }
 }
-
-
-
-
-

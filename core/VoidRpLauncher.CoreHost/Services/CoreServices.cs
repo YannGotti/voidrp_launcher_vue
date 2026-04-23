@@ -88,8 +88,19 @@ public sealed class LauncherPathsService
     public LauncherPathsService(LauncherPlatformService platformService)
     {
         _platformService = platformService;
-        BaseDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VoidRpLauncher");
+        BaseDirectory = ResolveBaseDirectory();
         LauncherInstallDirectory = ResolveLauncherInstallDirectory();
+    }
+
+    private string ResolveBaseDirectory()
+    {
+        if (Platform.IsMacOs)
+        {
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(userHome, "Library", "Application Support", "VoidRpLauncher");
+        }
+
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VoidRpLauncher");
     }
 
     public void EnsureBaseDirectories()
