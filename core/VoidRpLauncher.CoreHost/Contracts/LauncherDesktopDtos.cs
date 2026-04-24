@@ -70,6 +70,14 @@ public sealed class LauncherDashboardActivityDto
     public DateTimeOffset? CreatedAt { get; set; }
 }
 
+public sealed class LauncherAccountSecurityDto
+{
+    public int ActiveRefreshSessions { get; set; }
+    public bool MustUseLauncher { get; set; }
+    public bool LegacyHashPresent { get; set; }
+    public bool LegacyReady { get; set; }
+}
+
 public sealed class LauncherDashboardDto
 {
     public LauncherDashboardNationDto Nation { get; set; } = new();
@@ -97,6 +105,7 @@ public sealed class LauncherStateDto
     public string DiagnosticsText { get; set; } = string.Empty;
     public LauncherProgressDto Progress { get; set; } = new();
     public LauncherLinksDto Links { get; set; } = new();
+    public LauncherAccountSecurityDto Security { get; set; } = new();
     public LauncherDashboardDto Dashboard { get; set; } = new();
 }
 
@@ -150,3 +159,5 @@ public sealed class SettingsUpdateDto
 {
     public int MaxRamMb { get; set; }
 }
+
+

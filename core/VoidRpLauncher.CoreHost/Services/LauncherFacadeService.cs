@@ -164,6 +164,33 @@ public sealed class LauncherFacadeService
             }
         });
 
+    public async Task<OperationResponseDto> RevokeOtherSessionsAsync(CancellationToken cancellationToken = default)
+        => await RunExclusiveAsync(async () =>
+        {
+            try
+            {
+                var response = await _authSessionService.RevokeOtherSessionsAsync(cancellationToken);
+                try
+                {
+                    var snapshot = await _authSessionService.ReloadMeAsync(cancellationToken);
+                    _stateService.ApplySnapshot(snapshot);
+                }
+                catch (Exception ex)
+                {
+                    _diagnostics.Warn("Auth", $"ReloadMe after revoke failed: {ex.Message}");
+                }
+
+                _stateService.SetStatus("Другие активные сессии завершены.");
+                return OperationResponseDto.Success(GetState(), string.IsNullOrWhiteSpace(response.Message) ? "Другие активные сессии завершены." : response.Message);
+            }
+            catch (Exception ex)
+            {
+                _stateService.SetStatus($"Ошибка завершения других сессий: {ex.Message}");
+                _diagnostics.AppendException("Auth", ex);
+                return OperationResponseDto.Failure(GetState(), ex.Message);
+            }
+        });
+
     public async Task<OperationResponseDto> PlayAsync(CancellationToken cancellationToken = default)
         => await RunExclusiveAsync(async () =>
         {
@@ -248,29 +275,16 @@ public sealed class LauncherFacadeService
 
     public async Task<LauncherPlayerSkinDto> GetSkinAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var skin = await _authSessionService.GetSkinAsync(cancellationToken);
-            return ToDesktopSkin(skin);
-        }
-        catch (Exception ex)
-        {
-            _diagnostics.Warn("Skin", $"Failed to load player skin: {ex.Message}");
-            return new LauncherPlayerSkinDto();
-        }
+        var skin = await _authSessionService.GetSkinAsync(cancellationToken);
+        return MapSkin(skin);
     }
 
     public async Task<LauncherPlayerSkinOperationDto> UploadSkinAsync(IFormFile file, string modelVariant, CancellationToken cancellationToken = default)
     {
-        if (file is null || file.Length <= 0)
-        {
-            return LauncherPlayerSkinOperationDto.Failure("Файл скина не выбран.");
-        }
-
         try
         {
             var response = await _authSessionService.UploadSkinAsync(file, modelVariant, cancellationToken);
-            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+            return LauncherPlayerSkinOperationDto.Success(MapSkin(response.Skin), string.IsNullOrWhiteSpace(response.Message) ? "Скин сохранён." : response.Message);
         }
         catch (Exception ex)
         {
@@ -284,7 +298,7 @@ public sealed class LauncherFacadeService
         try
         {
             var response = await _authSessionService.DeleteSkinAsync(cancellationToken);
-            return LauncherPlayerSkinOperationDto.Success(ToDesktopSkin(response.Skin), response.Message);
+            return LauncherPlayerSkinOperationDto.Success(MapSkin(response.Skin), string.IsNullOrWhiteSpace(response.Message) ? "Скин удалён." : response.Message);
         }
         catch (Exception ex)
         {
@@ -388,24 +402,19 @@ public sealed class LauncherFacadeService
         }
     }
 
-    private static LauncherPlayerSkinDto ToDesktopSkin(PlayerSkinReadDto? skin)
+    private static LauncherPlayerSkinDto MapSkin(PlayerSkinReadDto? skin)
     {
-        if (skin is null)
-        {
-            return new LauncherPlayerSkinDto();
-        }
-
         return new LauncherPlayerSkinDto
         {
-            HasSkin = skin.HasSkin,
-            ModelVariant = string.IsNullOrWhiteSpace(skin.ModelVariant) ? "classic" : skin.ModelVariant,
-            SkinUrl = skin.SkinUrl ?? string.Empty,
-            HeadPreviewUrl = skin.HeadPreviewUrl ?? string.Empty,
-            BodyPreviewUrl = skin.BodyPreviewUrl ?? string.Empty,
-            Sha256 = skin.Sha256 ?? string.Empty,
-            Width = skin.Width ?? 0,
-            Height = skin.Height ?? 0,
-            UpdatedAt = skin.UpdatedAt,
+            HasSkin = skin?.HasSkin ?? false,
+            ModelVariant = skin?.ModelVariant ?? "classic",
+            SkinUrl = skin?.SkinUrl ?? string.Empty,
+            HeadPreviewUrl = skin?.HeadPreviewUrl ?? string.Empty,
+            BodyPreviewUrl = skin?.BodyPreviewUrl ?? string.Empty,
+            Sha256 = skin?.Sha256 ?? string.Empty,
+            Width = skin?.Width ?? 0,
+            Height = skin?.Height ?? 0,
+            UpdatedAt = skin?.UpdatedAt
         };
     }
 }

@@ -76,6 +76,9 @@ app.MapPost("/api/auth/login", async (LoginCommandDto dto, LauncherFacadeService
 app.MapPost("/api/auth/logout", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.LogoutAsync(CancellationToken.None)));
 
+app.MapPost("/api/auth/revoke-other-sessions", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.RevokeOtherSessionsAsync(CancellationToken.None)));
+
 app.MapPost("/api/actions/play", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.PlayAsync(CancellationToken.None)));
 

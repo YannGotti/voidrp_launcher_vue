@@ -143,6 +143,13 @@ public sealed class LauncherStateService
                     ForgotPasswordUrl = endpoints.ForgotPasswordUrl,
                     VerifyEmailUrl = endpoints.VerifyEmailUrl
                 },
+                Security = new LauncherAccountSecurityDto
+                {
+                    ActiveRefreshSessions = _snapshot?.Security?.ActiveRefreshSessions ?? 0,
+                    MustUseLauncher = _snapshot?.Security?.MustUseLauncher ?? false,
+                    LegacyHashPresent = _snapshot?.Security?.LegacyHashPresent ?? false,
+                    LegacyReady = _snapshot?.Security?.LegacyReady ?? false
+                },
                 Dashboard = BuildDashboardDto(_dashboard)
             };
         }
@@ -225,3 +232,5 @@ public sealed class LauncherStateService
         return value;
     }
 }
+
+

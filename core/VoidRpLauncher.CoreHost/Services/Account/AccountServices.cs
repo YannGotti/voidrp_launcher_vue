@@ -389,3 +389,4 @@ public sealed class AuthenticatedLaunchService
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
     }
 }
+

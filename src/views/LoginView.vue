@@ -42,9 +42,11 @@ async function submit() {
 
         <div
           class="rounded-2xl border px-3 py-2 text-xs font-medium"
-          :class="launcher.coreStatus.running ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-white/5 text-white/55'"
+          :class="(launcher.coreStatus?.running || launcher.initialized)
+          ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200'
+          : 'border-white/10 bg-white/5 text-white/55'"
         >
-          {{ launcher.coreStatus.running ? 'Ядро онлайн' : 'Ядро офлайн' }}
+          {{ (launcher.coreStatus?.running || launcher.initialized) ? 'Ядро онлайн' : 'Проверка ядра...' }}
         </div>
       </div>
 

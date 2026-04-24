@@ -16,6 +16,13 @@ interface LauncherLinks {
   verifyEmailUrl: string
 }
 
+interface LauncherAccountSecurity {
+  activeRefreshSessions: number
+  mustUseLauncher: boolean
+  legacyHashPresent: boolean
+  legacyReady: boolean
+}
+
 interface LauncherNation {
   id: string
   slug: string
@@ -61,17 +68,11 @@ interface LauncherPlayerStats {
   lastSyncedAt: string | null
 }
 
-interface LauncherRecentActivityItem {
-  eventType: string
-  message: string
-  createdAt: string | null
-}
-
 interface LauncherDashboard {
   nation: LauncherNation
   nationStats: LauncherNationStats
   playerStats: LauncherPlayerStats
-  recentActivity: LauncherRecentActivityItem[]
+  recentActivity: Array<{ eventType: string; message: string; createdAt: string | null }>
   walletBalance: number
 }
 
@@ -92,6 +93,7 @@ interface LauncherState {
   diagnosticsText: string
   progress: LauncherProgress
   links: LauncherLinks
+  security: LauncherAccountSecurity
   dashboard: LauncherDashboard
 }
 
@@ -102,7 +104,7 @@ interface OperationResponse {
   state: LauncherState
 }
 
-interface PlayerSkinState {
+interface SkinState {
   hasSkin: boolean
   modelVariant: string
   skinUrl: string
@@ -114,16 +116,10 @@ interface PlayerSkinState {
   updatedAt: string | null
 }
 
-interface PlayerSkinOperationResponse {
+interface SkinOpResponse {
   ok: boolean
   message: string
-  skin: PlayerSkinState
-}
-
-interface CoreStatus {
-  running: boolean
-  lastOkAt: number | null
-  lastError: string
+  skin: SkinState
 }
 
 interface ToastItem {
@@ -135,85 +131,38 @@ interface ToastItem {
 
 const API_BASE = 'http://127.0.0.1:38765'
 
-function createDefaultProgress(): LauncherProgress {
+function defaultProgress(): LauncherProgress {
+  return { visible: false, title: '', details: '', percent: 0 }
+}
+function defaultLinks(): LauncherLinks {
+  return { registerUrl: '', forgotPasswordUrl: '', verifyEmailUrl: '' }
+}
+function defaultSecurity(): LauncherAccountSecurity {
+  return { activeRefreshSessions: 0, mustUseLauncher: false, legacyHashPresent: false, legacyReady: false }
+}
+function defaultNation(): LauncherNation {
   return {
-    visible: false,
-    title: '',
-    details: '',
-    percent: 0,
+    id: '', slug: '', title: '', tag: '', accentColor: '', role: '',
+    iconUrl: '', iconPreviewUrl: '', bannerUrl: '', bannerPreviewUrl: '',
+    backgroundUrl: '', backgroundPreviewUrl: '', allianceTitle: '', allianceTag: '',
   }
 }
-
-function createDefaultLinks(): LauncherLinks {
+function defaultNationStats(): LauncherNationStats {
   return {
-    registerUrl: '',
-    forgotPasswordUrl: '',
-    verifyEmailUrl: '',
+    treasuryBalance: 0, territoryPoints: 0, totalPlaytimeMinutes: 0, pvpKills: 0, mobKills: 0,
+    bossKills: 0, deaths: 0, blocksPlaced: 0, blocksBroken: 0, eventsCompleted: 0, prestigeScore: 0,
   }
 }
-
-function createDefaultNation(): LauncherNation {
+function defaultPlayerStats(): LauncherPlayerStats {
   return {
-    id: '',
-    slug: '',
-    title: '',
-    tag: '',
-    accentColor: '',
-    role: '',
-    iconUrl: '',
-    iconPreviewUrl: '',
-    bannerUrl: '',
-    bannerPreviewUrl: '',
-    backgroundUrl: '',
-    backgroundPreviewUrl: '',
-    allianceTitle: '',
-    allianceTag: '',
+    minecraftNickname: '', totalPlaytimeMinutes: 0, pvpKills: 0, mobKills: 0, deaths: 0,
+    blocksPlaced: 0, blocksBroken: 0, currentBalance: 0, source: '', lastSeenAt: null, lastSyncedAt: null,
   }
 }
-
-function createDefaultNationStats(): LauncherNationStats {
-  return {
-    treasuryBalance: 0,
-    territoryPoints: 0,
-    totalPlaytimeMinutes: 0,
-    pvpKills: 0,
-    mobKills: 0,
-    bossKills: 0,
-    deaths: 0,
-    blocksPlaced: 0,
-    blocksBroken: 0,
-    eventsCompleted: 0,
-    prestigeScore: 0,
-  }
+function defaultDashboard(): LauncherDashboard {
+  return { nation: defaultNation(), nationStats: defaultNationStats(), playerStats: defaultPlayerStats(), recentActivity: [], walletBalance: 0 }
 }
-
-function createDefaultPlayerStats(): LauncherPlayerStats {
-  return {
-    minecraftNickname: '',
-    totalPlaytimeMinutes: 0,
-    pvpKills: 0,
-    mobKills: 0,
-    deaths: 0,
-    blocksPlaced: 0,
-    blocksBroken: 0,
-    currentBalance: 0,
-    source: '',
-    lastSeenAt: null,
-    lastSyncedAt: null,
-  }
-}
-
-function createDefaultDashboard(): LauncherDashboard {
-  return {
-    nation: createDefaultNation(),
-    nationStats: createDefaultNationStats(),
-    playerStats: createDefaultPlayerStats(),
-    recentActivity: [],
-    walletBalance: 0,
-  }
-}
-
-function createDefaultState(): LauncherState {
+function defaultState(): LauncherState {
   return {
     initialized: false,
     isBusy: false,
@@ -229,127 +178,53 @@ function createDefaultState(): LauncherState {
     dataDirectory: '',
     gameDirectory: '',
     diagnosticsText: '',
-    progress: createDefaultProgress(),
-    links: createDefaultLinks(),
-    dashboard: createDefaultDashboard(),
+    progress: defaultProgress(),
+    links: defaultLinks(),
+    security: defaultSecurity(),
+    dashboard: defaultDashboard(),
   }
 }
-
-function createDefaultSkin(): PlayerSkinState {
+function defaultSkin(): SkinState {
   return {
-    hasSkin: false,
-    modelVariant: 'classic',
-    skinUrl: '',
-    headPreviewUrl: '',
-    bodyPreviewUrl: '',
-    sha256: '',
-    width: 0,
-    height: 0,
-    updatedAt: null,
+    hasSkin: false, modelVariant: 'classic', skinUrl: '', headPreviewUrl: '',
+    bodyPreviewUrl: '', sha256: '', width: 0, height: 0, updatedAt: null,
   }
 }
-
-function createDefaultCoreStatus(): CoreStatus {
-  return {
-    running: false,
-    lastOkAt: null,
-    lastError: '',
-  }
+function toastId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
-function createToastId(): string {
-  return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-}
-
-async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'GET',
-    cache: 'no-store',
-  })
-
+async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { cache: 'no-store', ...(init || {}) })
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    const detail = await response.text()
+    throw new Error(detail || `HTTP ${response.status}`)
   }
-
-  return (await response.json()) as T
-}
-
-async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-
-  return (await response.json()) as T
-}
-
-async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    cache: 'no-store',
-    body: formData,
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-
-  return (await response.json()) as T
-}
-
-async function apiDelete<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'DELETE',
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-
   return (await response.json()) as T
 }
 
 export const useLauncherStore = defineStore('launcher', () => {
-  const state = reactive<LauncherState>(createDefaultState())
-  const skin = reactive<PlayerSkinState>(createDefaultSkin())
-  const coreStatus = reactive<CoreStatus>(createDefaultCoreStatus())
+  const state = reactive<LauncherState>(defaultState())
+  const skin = reactive<SkinState>(defaultSkin())
   const toasts = reactive<ToastItem[]>([])
-
+  let pollHandle: number | null = null
   let bootstrapPromise: Promise<void> | null = null
-  let statePollTimer: number | null = null
-  let disposed = false
-  let bootstrapping = false
 
   function pushToast(tone: ToastTone, title: string, message: string) {
-    if (!message?.trim()) return
-
-    const id = createToastId()
-    toasts.push({ id, tone, title, message })
-
-    window.setTimeout(() => {
-      dismissToast(id)
-    }, tone === 'error' ? 6500 : 4200)
+    const safe = String(message || '').trim()
+    if (!safe) return
+    const id = toastId()
+    toasts.push({ id, tone, title, message: safe })
+    window.setTimeout(() => dismissToast(id), tone === 'error' ? 6500 : 4200)
   }
 
   function dismissToast(id: string) {
     const index = toasts.findIndex((item) => item.id === id)
-    if (index >= 0) {
-      toasts.splice(index, 1)
-    }
+    if (index >= 0) toasts.splice(index, 1)
   }
 
   function applyState(next: Partial<LauncherState> | null | undefined) {
     if (!next) return
-
     state.initialized = Boolean(next.initialized)
     state.isBusy = Boolean(next.isBusy)
     state.isAuthenticated = Boolean(next.isAuthenticated)
@@ -364,128 +239,74 @@ export const useLauncherStore = defineStore('launcher', () => {
     state.dataDirectory = String(next.dataDirectory ?? '')
     state.gameDirectory = String(next.gameDirectory ?? '')
     state.diagnosticsText = String(next.diagnosticsText ?? '')
-
-    const nextProgress = next.progress ?? createDefaultProgress()
-    state.progress = {
-      visible: Boolean(nextProgress.visible),
-      title: String(nextProgress.title ?? ''),
-      details: String(nextProgress.details ?? ''),
-      percent: Number(nextProgress.percent ?? 0),
-    }
-
-    const nextLinks = next.links ?? createDefaultLinks()
-    state.links = {
-      registerUrl: String(nextLinks.registerUrl ?? ''),
-      forgotPasswordUrl: String(nextLinks.forgotPasswordUrl ?? ''),
-      verifyEmailUrl: String(nextLinks.verifyEmailUrl ?? ''),
-    }
-
-    const nextDashboard = next.dashboard ?? createDefaultDashboard()
+    state.progress = { ...defaultProgress(), ...(next.progress ?? {}) }
+    state.links = { ...defaultLinks(), ...(next.links ?? {}) }
+    state.security = { ...defaultSecurity(), ...(next.security ?? {}) }
     state.dashboard = {
-      nation: {
-        ...createDefaultNation(),
-        ...(nextDashboard.nation ?? {}),
-      },
-      nationStats: {
-        ...createDefaultNationStats(),
-        ...(nextDashboard.nationStats ?? {}),
-      },
-      playerStats: {
-        ...createDefaultPlayerStats(),
-        ...(nextDashboard.playerStats ?? {}),
-      },
-      recentActivity: Array.isArray(nextDashboard.recentActivity)
-        ? nextDashboard.recentActivity.map((item) => ({
-            eventType: String(item?.eventType ?? ''),
-            message: String(item?.message ?? ''),
-            createdAt: item?.createdAt ? String(item.createdAt) : null,
-          }))
-        : [],
-      walletBalance: Number(nextDashboard.walletBalance ?? 0),
+      nation: { ...defaultNation(), ...((next.dashboard?.nation as any) ?? {}) },
+      nationStats: { ...defaultNationStats(), ...((next.dashboard?.nationStats as any) ?? {}) },
+      playerStats: { ...defaultPlayerStats(), ...((next.dashboard?.playerStats as any) ?? {}) },
+      recentActivity: Array.isArray(next.dashboard?.recentActivity) ? (next.dashboard?.recentActivity as any) : [],
+      walletBalance: Number(next.dashboard?.walletBalance ?? 0),
     }
   }
 
-  function applySkin(next: Partial<PlayerSkinState> | null | undefined) {
-    const safe = next ?? createDefaultSkin()
-    skin.hasSkin = Boolean(safe.hasSkin)
-    skin.modelVariant = String(safe.modelVariant ?? 'classic')
-    skin.skinUrl = String(safe.skinUrl ?? '')
-    skin.headPreviewUrl = String(safe.headPreviewUrl ?? '')
-    skin.bodyPreviewUrl = String(safe.bodyPreviewUrl ?? '')
-    skin.sha256 = String(safe.sha256 ?? '')
-    skin.width = Number(safe.width ?? 0)
-    skin.height = Number(safe.height ?? 0)
-    skin.updatedAt = safe.updatedAt ? String(safe.updatedAt) : null
+  function applySkin(next: Partial<SkinState> | null | undefined) {
+    const value = { ...defaultSkin(), ...(next ?? {}) }
+    skin.hasSkin = Boolean(value.hasSkin)
+    skin.modelVariant = String(value.modelVariant || 'classic')
+    skin.skinUrl = String(value.skinUrl || '')
+    skin.headPreviewUrl = String(value.headPreviewUrl || '')
+    skin.bodyPreviewUrl = String(value.bodyPreviewUrl || '')
+    skin.sha256 = String(value.sha256 || '')
+    skin.width = Number(value.width || 0)
+    skin.height = Number(value.height || 0)
+    skin.updatedAt = value.updatedAt ? String(value.updatedAt) : null
   }
 
   async function pollStateOnce() {
     try {
-      const nextState = await apiGet<LauncherState>('/api/state')
-      applyState(nextState)
-      coreStatus.running = true
-      coreStatus.lastOkAt = Date.now()
-      coreStatus.lastError = ''
+      const next = await readJson<LauncherState>('/api/state')
+      applyState(next)
     } catch (error) {
-      coreStatus.running = false
-      coreStatus.lastError = error instanceof Error ? error.message : 'Core is unavailable'
+      // keep old state, do not spam user
     }
   }
 
   function startPolling() {
     stopPolling()
-    statePollTimer = window.setInterval(() => {
+    pollHandle = window.setInterval(() => {
       void pollStateOnce()
-    }, 1000)
+    }, 1200)
   }
 
   function stopPolling() {
-    if (statePollTimer != null) {
-      window.clearInterval(statePollTimer)
-      statePollTimer = null
+    if (pollHandle != null) {
+      window.clearInterval(pollHandle)
+      pollHandle = null
     }
   }
 
   async function initializeApp() {
-    if (bootstrapPromise) {
-      return bootstrapPromise
-    }
-
-    bootstrapping = true
-
+    if (bootstrapPromise) return bootstrapPromise
     bootstrapPromise = (async () => {
       try {
-        const response = await apiGet<OperationResponse>('/api/bootstrap')
-        if (response?.state) {
-          applyState(response.state)
-        } else {
-          await pollStateOnce()
-        }
-
-        coreStatus.running = true
-        coreStatus.lastOkAt = Date.now()
-        coreStatus.lastError = ''
-
-        if (state.isAuthenticated) {
+        const response = await readJson<OperationResponse>('/api/bootstrap')
+        applyState(response.state)
+        if (response.state?.isAuthenticated) {
           try {
-            const currentSkin = await apiGet<PlayerSkinState>('/api/skin')
-            applySkin(currentSkin)
+            applySkin(await readJson<SkinState>('/api/skin'))
           } catch {
-            applySkin(createDefaultSkin())
+            applySkin(defaultSkin())
           }
         } else {
-          applySkin(createDefaultSkin())
+          applySkin(defaultSkin())
         }
-
         startPolling()
-      } catch (error) {
-        coreStatus.running = false
-        coreStatus.lastError = error instanceof Error ? error.message : 'Core bootstrap failed'
-        pushToast('error', 'Ядро лаунчера недоступно', 'Не удалось связаться с локальным ядром лаунчера.')
-      } finally {
-        bootstrapping = false
+      } catch (error: any) {
+        pushToast('error', 'Ядро лаунчера недоступно', error?.message || 'Не удалось связаться с локальным ядром.')
       }
     })()
-
     try {
       await bootstrapPromise
     } finally {
@@ -494,172 +315,128 @@ export const useLauncherStore = defineStore('launcher', () => {
   }
 
   function dispose() {
-    disposed = true
     stopPolling()
   }
 
   async function login(login: string, password: string) {
     try {
-      const response = await apiPostJson<OperationResponse>('/api/auth/login', {
-        login,
-        password,
+      const response = await readJson<OperationResponse>('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password }),
       })
-
       applyState(response.state)
-      coreStatus.running = true
-      coreStatus.lastOkAt = Date.now()
-      coreStatus.lastError = ''
-
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Вход выполнен' : 'Ошибка входа', response.message || '')
       if (response.ok) {
-        pushToast('success', 'Вход выполнен', response.message || 'Аккаунт готов к игре.')
         try {
-          const currentSkin = await apiGet<PlayerSkinState>('/api/skin')
-          applySkin(currentSkin)
+          applySkin(await readJson<SkinState>('/api/skin'))
         } catch {
-          applySkin(createDefaultSkin())
+          applySkin(defaultSkin())
         }
-      } else {
-        pushToast('error', 'Ошибка входа', response.message || 'Не удалось войти.')
       }
-
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка входа', error instanceof Error ? error.message : 'Не удалось войти.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка входа', error?.message || 'Не удалось войти.')
       return null
     }
   }
 
   async function logout() {
     try {
-      const response = await apiPostJson<OperationResponse>('/api/auth/logout', {})
+      const response = await readJson<OperationResponse>('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
       applyState(response.state)
-      applySkin(createDefaultSkin())
+      applySkin(defaultSkin())
       pushToast('success', 'Сессия завершена', response.message || 'Вы вышли из аккаунта.')
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка выхода', error instanceof Error ? error.message : 'Не удалось выйти.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка выхода', error?.message || 'Не удалось выйти.')
+      return null
+    }
+  }
+
+  async function revokeOtherSessions() {
+    try {
+      const response = await readJson<OperationResponse>('/api/auth/revoke-other-sessions', { method: 'POST' })
+      applyState(response.state)
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Сессии очищены' : 'Не удалось завершить другие сессии', response.message || '')
+      return response
+    } catch (error: any) {
+      pushToast('error', 'Ошибка безопасности', error?.message || 'Не удалось завершить другие сессии.')
       return null
     }
   }
 
   async function play() {
     try {
-      const response = await apiPostJson<OperationResponse>('/api/actions/play', {})
+      const response = await readJson<OperationResponse>('/api/actions/play', { method: 'POST' })
       applyState(response.state)
       if (!response.ok) {
         pushToast('error', 'Запуск не выполнен', response.message || 'Не удалось запустить Minecraft.')
       }
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка запуска', error instanceof Error ? error.message : 'Не удалось запустить Minecraft.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка запуска', error?.message || 'Не удалось запустить Minecraft.')
       return null
     }
   }
 
   async function repair() {
     try {
-      const response = await apiPostJson<OperationResponse>('/api/actions/repair', {})
+      const response = await readJson<OperationResponse>('/api/actions/repair', { method: 'POST' })
       applyState(response.state)
-      if (response.ok) {
-        pushToast('success', 'Ремонт завершён', response.message || 'Клиент очищен и готов к пересинхронизации.')
-      } else {
-        pushToast('error', 'Ремонт не выполнен', response.message || 'Не удалось выполнить ремонт клиента.')
-      }
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Клиент восстановлен' : 'Ремонт не выполнен', response.message || '')
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка ремонта', error instanceof Error ? error.message : 'Не удалось выполнить ремонт клиента.')
-      return null
-    }
-  }
-
-  async function saveMemory(maxRamMb: number) {
-    try {
-      const response = await apiPostJson<OperationResponse>('/api/settings', {
-        maxRamMb,
-      })
-      applyState(response.state)
-      if (response.ok) {
-        pushToast('success', 'Настройки сохранены', response.message || 'Память обновлена.')
-      } else {
-        pushToast('error', 'Не удалось сохранить', response.message || 'Параметры не сохранены.')
-      }
-      return response
-    } catch (error) {
-      pushToast('error', 'Ошибка сохранения', error instanceof Error ? error.message : 'Не удалось сохранить настройки.')
-      return null
-    }
-  }
-
-  async function resetSettings() {
-    try {
-      const response = await apiPostJson<OperationResponse>('/api/settings/reset', {})
-      applyState(response.state)
-      if (response.ok) {
-        pushToast('success', 'Настройки сброшены', response.message || 'Параметры возвращены к значениям по умолчанию.')
-      } else {
-        pushToast('error', 'Не удалось сбросить', response.message || 'Сброс параметров не выполнен.')
-      }
-      return response
-    } catch (error) {
-      pushToast('error', 'Ошибка сброса', error instanceof Error ? error.message : 'Не удалось сбросить настройки.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка ремонта', error?.message || 'Не удалось починить клиент.')
       return null
     }
   }
 
   async function clearDiagnostics() {
     try {
-      const response = await apiPostJson<OperationResponse>('/api/diagnostics/clear', {})
+      const response = await readJson<OperationResponse>('/api/diagnostics/clear', { method: 'POST' })
       applyState(response.state)
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка диагностики', error instanceof Error ? error.message : 'Не удалось очистить диагностику.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка диагностики', error?.message || 'Не удалось очистить диагностику.')
+      return null
+    }
+  }
+
+  async function uploadSkin(file: File, modelVariant: string) {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('model_variant', modelVariant)
+    try {
+      const response = await readJson<SkinOpResponse>('/api/skin', { method: 'POST', body: form })
+      applySkin(response.skin)
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Скин сохранён' : 'Скин не сохранён', response.message || '')
+      return response
+    } catch (error: any) {
+      pushToast('error', 'Ошибка скина', error?.message || 'Не удалось загрузить скин.')
       return null
     }
   }
 
   async function refreshSkin() {
     try {
-      const currentSkin = await apiGet<PlayerSkinState>('/api/skin')
-      applySkin(currentSkin)
-      return currentSkin
-    } catch (error) {
-      pushToast('error', 'Ошибка загрузки скина', error instanceof Error ? error.message : 'Не удалось загрузить данные скина.')
-      return null
-    }
-  }
-
-  async function uploadSkin(file: File, modelVariant: string) {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('model_variant', modelVariant)
-
-    try {
-      const response = await apiPostForm<PlayerSkinOperationResponse>('/api/skin', formData)
-      applySkin(response.skin)
-      if (response.ok) {
-        pushToast('success', 'Скин сохранён', response.message || 'Новый скин успешно загружен.')
-      } else {
-        pushToast('error', 'Не удалось загрузить скин', response.message || 'Скин не был сохранён.')
-      }
+      const response = await readJson<SkinState>('/api/skin')
+      applySkin(response)
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка загрузки скина', error instanceof Error ? error.message : 'Не удалось отправить файл скина.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка скина', error?.message || 'Не удалось загрузить данные скина.')
       return null
     }
   }
 
   async function deleteSkin() {
     try {
-      const response = await apiDelete<PlayerSkinOperationResponse>('/api/skin')
+      const response = await readJson<SkinOpResponse>('/api/skin', { method: 'DELETE' })
       applySkin(response.skin)
-      if (response.ok) {
-        pushToast('success', 'Скин удалён', response.message || 'Скин удалён.')
-      } else {
-        pushToast('error', 'Не удалось удалить скин', response.message || 'Скин не был удалён.')
-      }
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Скин удалён' : 'Не удалось удалить скин', response.message || '')
       return response
-    } catch (error) {
-      pushToast('error', 'Ошибка удаления скина', error instanceof Error ? error.message : 'Не удалось удалить скин.')
+    } catch (error: any) {
+      pushToast('error', 'Ошибка скина', error?.message || 'Не удалось удалить скин.')
       return null
     }
   }
@@ -667,29 +444,19 @@ export const useLauncherStore = defineStore('launcher', () => {
   function openExternal(url: string) {
     const target = String(url || '').trim()
     if (!target) return
-
     const electronApi = (window as any)?.electronAPI
     if (electronApi?.openExternal) {
       electronApi.openExternal(target)
       return
     }
-
     window.open(target, '_blank', 'noopener,noreferrer')
   }
 
-  const shouldShowProgress = computed(() => {
-    return Boolean(state.progress.visible || state.isBusy || bootstrapping)
-  })
-
   const accountNickname = computed(() => state.accountPrimaryText || 'Гость')
-
   const accountMeta = computed(() => {
     const raw = String(state.accountSecondaryText || '')
     const [login, email] = raw.split(' • ')
-    return {
-      login: login || '',
-      email: email || '',
-    }
+    return { login: login || '', email: email || '' }
   })
 
   return {
@@ -709,32 +476,27 @@ export const useLauncherStore = defineStore('launcher', () => {
     diagnosticsText: computed(() => state.diagnosticsText),
     progress: computed(() => state.progress),
     links: computed(() => state.links),
+    security: computed(() => state.security),
     dashboard: computed(() => state.dashboard),
-
     nation: computed(() => state.dashboard.nation),
     nationStats: computed(() => state.dashboard.nationStats),
     playerStats: computed(() => state.dashboard.playerStats),
     recentActivity: computed(() => state.dashboard.recentActivity),
     walletBalance: computed(() => state.dashboard.walletBalance),
-
     skin: computed(() => skin),
-    coreStatus: computed(() => coreStatus),
     toasts: computed(() => toasts),
-    shouldShowProgress,
     accountNickname,
     accountMeta,
-
     initializeApp,
     dispose,
     login,
     logout,
+    revokeOtherSessions,
     play,
     repair,
-    saveMemory,
-    resetSettings,
     clearDiagnostics,
-    refreshSkin,
     uploadSkin,
+    refreshSkin,
     deleteSkin,
     dismissToast,
     openExternal,
