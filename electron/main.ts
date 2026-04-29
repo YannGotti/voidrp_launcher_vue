@@ -102,6 +102,16 @@ function getCoreStatus(): CoreStatusPayload {
   }
 }
 
+function resolveCoreRid(): string {
+  if (process.platform === 'win32') return 'win-x64'
+  if (process.platform === 'darwin') return process.arch === 'arm64' ? 'osx-arm64' : 'osx-x64'
+  return process.arch === 'arm64' ? 'linux-arm64' : 'linux-x64'
+}
+
+function resolveCoreExeName(): string {
+  return process.platform === 'win32' ? 'VoidRpLauncher.CoreHost.exe' : 'VoidRpLauncher.CoreHost'
+}
+
 function resolveRendererIndexPath(): string {
   if (app.isPackaged) {
     return path.join(app.getAppPath(), 'dist-renderer', 'index.html')
@@ -119,14 +129,17 @@ function resolvePreloadPath(): string {
 }
 
 function resolveCoreExecutablePath(): string {
+  const rid = resolveCoreRid()
+  const exeName = resolveCoreExeName()
+
   const candidates = app.isPackaged
     ? [
-        path.join(process.resourcesPath, 'core', 'win-x64', 'VoidRpLauncher.CoreHost.exe')
+        path.join(process.resourcesPath, 'core', rid, exeName)
       ]
     : [
-        path.join(process.cwd(), 'build', 'core', 'win-x64', 'VoidRpLauncher.CoreHost.exe'),
-        path.join(process.cwd(), 'core', 'VoidRpLauncher.CoreHost', 'bin', 'Debug', 'net8.0', 'win-x64', 'VoidRpLauncher.CoreHost.exe'),
-        path.join(process.cwd(), 'core', 'VoidRpLauncher.CoreHost', 'bin', 'Release', 'net8.0', 'win-x64', 'VoidRpLauncher.CoreHost.exe')
+        path.join(process.cwd(), 'build', 'core', rid, exeName),
+        path.join(process.cwd(), 'core', 'VoidRpLauncher.CoreHost', 'bin', 'Debug', `net8.0`, rid, exeName),
+        path.join(process.cwd(), 'core', 'VoidRpLauncher.CoreHost', 'bin', 'Release', `net8.0`, rid, exeName)
       ]
 
   for (const candidate of candidates) {
@@ -146,9 +159,10 @@ function resolvePortableLauncherTargetPath(): string {
 }
 
 function resolveAppSettingsPath(): string | null {
+  const rid = resolveCoreRid()
   const candidates = app.isPackaged
     ? [
-        path.join(process.resourcesPath, 'core', 'win-x64', 'appsettings.json')
+        path.join(process.resourcesPath, 'core', rid, 'appsettings.json')
       ]
     : [
         path.join(process.cwd(), 'core', 'VoidRpLauncher.CoreHost', 'appsettings.json')
@@ -182,6 +196,8 @@ function detectUpdateRid(): string {
   if (process.platform === 'win32' && process.arch === 'x64') return 'win-x64'
   if (process.platform === 'darwin' && process.arch === 'arm64') return 'osx-arm64'
   if (process.platform === 'darwin' && process.arch === 'x64') return 'osx-x64'
+  if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x64'
+  if (process.platform === 'linux' && process.arch === 'arm64') return 'linux-arm64'
   throw new Error(`Unsupported platform for self-update: ${process.platform}/${process.arch}`)
 }
 
@@ -270,8 +286,9 @@ async function installShellUpdate(update: PendingShellUpdate) {
     ensureDirectory(workDir)
 
     const launcherTarget = resolvePortableLauncherTargetPath()
-    const launcherDownloadPath = path.join(workDir, 'VoidRpLauncher.update.exe')
-    const updaterDownloadPath = path.join(workDir, 'VoidRpLauncher.Updater.update.exe')
+    const exeSuffix = process.platform === 'win32' ? '.exe' : ''
+    const launcherDownloadPath = path.join(workDir, `VoidRpLauncher.update${exeSuffix}`)
+    const updaterDownloadPath = path.join(workDir, `VoidRpLauncher.Updater.update${exeSuffix}`)
 
     emitUpdaterStatus({
       available: true,
@@ -317,10 +334,14 @@ async function installShellUpdate(update: PendingShellUpdate) {
       '--restart', 'start-file'
     ]
 
+    if (process.platform !== 'win32') {
+      try { fs.chmodSync(updaterDownloadPath, 0o755) } catch { /* ignore */ }
+    }
+
     const child = spawn(updaterDownloadPath, args, {
       detached: true,
       stdio: 'ignore',
-      windowsHide: true
+      ...(process.platform === 'win32' ? { windowsHide: true } : {})
     })
 
     child.unref()
@@ -422,6 +443,10 @@ function startCoreProcess() {
 
   lastCoreError = ''
   logMain(`Starting core: ${executablePath}`)
+
+  if (process.platform !== 'win32') {
+    try { fs.chmodSync(executablePath, 0o755) } catch { /* ignore */ }
+  }
 
   coreProcess = spawn(executablePath, [], {
     cwd: path.dirname(executablePath),

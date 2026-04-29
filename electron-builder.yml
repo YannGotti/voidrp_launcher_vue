@@ -6,12 +6,6 @@ files:
   - dist-renderer/**
   - dist-electron/**
 
-extraResources:
-  - from: build/core/win-x64
-    to: core/win-x64
-    filter:
-      - "**/*"
-
 directories:
   output: dist-release
   buildResources: build-resources
@@ -30,6 +24,24 @@ win:
   verifyUpdateCodeSignature: false
   signAndEditExecutable: false
   forceCodeSigning: false
+  extraResources:
+    - from: build/core/win-x64
+      to: core/win-x64
+      filter:
+        - "**/*"
+
+linux:
+  icon: build-resources/icon.png
+  executableName: VoidRpLauncher
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  extraResources:
+    - from: build/core/linux-x64
+      to: core/linux-x64
+      filter:
+        - "**/*"
 
 portable:
   artifactName: VoidRP-Launcher-${version}-portable.${ext}

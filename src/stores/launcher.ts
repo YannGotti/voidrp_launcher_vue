@@ -444,12 +444,68 @@ export const useLauncherStore = defineStore('launcher', () => {
   function openExternal(url: string) {
     const target = String(url || '').trim()
     if (!target) return
-    const electronApi = (window as any)?.electronAPI
-    if (electronApi?.openExternal) {
-      electronApi.openExternal(target)
+    const desktop = (window as any)?.desktop
+    if (desktop?.openExternal) {
+      void desktop.openExternal(target)
       return
     }
     window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
+  async function saveMemory(maxRamMb: number) {
+    try {
+      const response = await readJson<OperationResponse>('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxRamMb }),
+      })
+      applyState(response.state)
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Настройки сохранены' : 'Ошибка сохранения', response.message || '')
+      return response
+    } catch (error: any) {
+      pushToast('error', 'Ошибка настроек', error?.message || 'Не удалось сохранить настройки.')
+      return null
+    }
+  }
+
+  async function resetMemory() {
+    try {
+      const response = await readJson<OperationResponse>('/api/settings/reset', { method: 'POST' })
+      applyState(response.state)
+      pushToast(response.ok ? 'success' : 'error', response.ok ? 'Настройки сброшены' : 'Ошибка сброса', response.message || '')
+      return response
+    } catch (error: any) {
+      pushToast('error', 'Ошибка настроек', error?.message || 'Не удалось сбросить настройки.')
+      return null
+    }
+  }
+
+  async function checkShellUpdates() {
+    const desktop = (window as any)?.desktop
+    if (desktop?.checkForShellUpdates) {
+      return desktop.checkForShellUpdates() as Promise<{ ok: boolean; message: string }>
+    }
+    pushToast('warning', 'Нет доступа', 'Функция доступна только в десктоп-приложении.')
+    return null
+  }
+
+  async function installShellUpdate() {
+    const desktop = (window as any)?.desktop
+    if (desktop?.downloadAndInstallShellUpdate) {
+      return desktop.downloadAndInstallShellUpdate() as Promise<{ ok: boolean; message: string }>
+    }
+    pushToast('warning', 'Нет доступа', 'Функция доступна только в десктоп-приложении.')
+    return null
+  }
+
+  function openPath(targetPath: string) {
+    const target = String(targetPath || '').trim()
+    if (!target) return Promise.resolve('')
+    const desktop = (window as any)?.desktop
+    if (desktop?.openPath) {
+      return desktop.openPath(target) as Promise<string>
+    }
+    return Promise.resolve('')
   }
 
   const accountNickname = computed(() => state.accountPrimaryText || 'Гость')
@@ -485,6 +541,7 @@ export const useLauncherStore = defineStore('launcher', () => {
     walletBalance: computed(() => state.dashboard.walletBalance),
     skin: computed(() => skin),
     toasts: computed(() => toasts),
+    shouldShowProgress: computed(() => state.progress.visible),
     accountNickname,
     accountMeta,
     initializeApp,
@@ -500,5 +557,10 @@ export const useLauncherStore = defineStore('launcher', () => {
     deleteSkin,
     dismissToast,
     openExternal,
+    saveMemory,
+    resetMemory,
+    checkShellUpdates,
+    installShellUpdate,
+    openPath,
   }
 })

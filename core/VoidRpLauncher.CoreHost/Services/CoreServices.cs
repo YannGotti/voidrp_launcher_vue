@@ -54,7 +54,29 @@ public sealed class LauncherPlatformService
             };
         }
 
-        throw new PlatformNotSupportedException("Only Windows x64 and macOS are supported.");
+        if (OperatingSystem.IsLinux())
+        {
+            var rid = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X64 => "linux-x64",
+                Architecture.Arm64 => "linux-arm64",
+                _ => throw new PlatformNotSupportedException($"Linux architecture '{RuntimeInformation.ProcessArchitecture}' is not supported.")
+            };
+
+            return new LauncherPlatformInfo
+            {
+                Rid = rid,
+                DisplayName = rid == "linux-arm64" ? "Linux ARM64" : "Linux x64",
+                IsWindows = false,
+                IsMacOs = false,
+                IsLinux = true,
+                LauncherExecutableFileName = "VoidRpLauncher",
+                UpdaterExecutableFileName = "VoidRpLauncher.Updater",
+                RuntimeManifestFileName = $"runtime-manifest.{rid}.json"
+            };
+        }
+
+        throw new PlatformNotSupportedException("Unsupported platform. Supported: Windows x64, Linux x64/arm64, macOS x64/arm64.");
     }
 }
 
@@ -64,6 +86,7 @@ public sealed class LauncherPlatformInfo
     public string DisplayName { get; init; } = string.Empty;
     public bool IsWindows { get; init; }
     public bool IsMacOs { get; init; }
+    public bool IsLinux { get; init; }
     public string LauncherExecutableFileName { get; init; } = string.Empty;
     public string UpdaterExecutableFileName { get; init; } = string.Empty;
     public string RuntimeManifestFileName { get; init; } = string.Empty;
@@ -98,6 +121,15 @@ public sealed class LauncherPathsService
         {
             var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             return Path.Combine(userHome, "Library", "Application Support", "VoidRpLauncher");
+        }
+
+        if (Platform.IsLinux)
+        {
+            var xdgDataHome = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            if (!string.IsNullOrWhiteSpace(xdgDataHome))
+                return Path.Combine(xdgDataHome, "VoidRpLauncher");
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(userHome, ".local", "share", "VoidRpLauncher");
         }
 
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VoidRpLauncher");
