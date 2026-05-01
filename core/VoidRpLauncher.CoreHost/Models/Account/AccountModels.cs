@@ -152,6 +152,7 @@ public sealed class LauncherDashboardPlayerStatsResponseDto
     [JsonPropertyName("blocks_placed")] public long BlocksPlaced { get; set; }
     [JsonPropertyName("blocks_broken")] public long BlocksBroken { get; set; }
     [JsonPropertyName("current_balance")] public double CurrentBalance { get; set; }
+    [JsonPropertyName("completed_quests")] public int CompletedQuests { get; set; }
     [JsonPropertyName("source")] public string Source { get; set; } = string.Empty;
     [JsonPropertyName("last_seen_at")] public DateTimeOffset? LastSeenAt { get; set; }
     [JsonPropertyName("last_synced_at")] public DateTimeOffset? LastSyncedAt { get; set; }

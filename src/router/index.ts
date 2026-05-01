@@ -7,6 +7,7 @@ import AccountView from '../views/AccountView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LeaderboardView from '../views/LeaderboardView.vue'
 import GuideView from '../views/GuideView.vue'
+import MapView from '../views/MapView.vue'
 
 const routes = [
   {
@@ -24,6 +25,7 @@ const routes = [
       { path: 'settings', component: SettingsView },
       { path: 'leaderboard', component: LeaderboardView },
       { path: 'guide', component: GuideView },
+      { path: 'map', component: MapView },
     ],
   },
   {

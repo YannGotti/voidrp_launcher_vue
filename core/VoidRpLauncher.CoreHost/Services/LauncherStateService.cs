@@ -212,6 +212,7 @@ public sealed class LauncherStateService
                     BlocksPlaced = dashboard.PlayerStats.BlocksPlaced,
                     BlocksBroken = dashboard.PlayerStats.BlocksBroken,
                     CurrentBalance = dashboard.PlayerStats.CurrentBalance,
+                    CompletedQuests = dashboard.PlayerStats.CompletedQuests,
                     Source = dashboard.PlayerStats.Source ?? string.Empty,
                     LastSeenAt = dashboard.PlayerStats.LastSeenAt,
                     LastSyncedAt = dashboard.PlayerStats.LastSyncedAt,

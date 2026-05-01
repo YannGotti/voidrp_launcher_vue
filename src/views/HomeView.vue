@@ -85,5 +85,11 @@ const hasNation = computed(() => Boolean(launcher.nation.title))
       <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.playerStats.pvpKills) }}</p>
       <p class="mt-1 text-xs text-white/55">личные убийства</p>
     </section>
+
+    <section class="col-span-6 rounded-[20px] border border-white/10 bg-white/[0.035] p-4 md:col-span-3">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/35">Квесты</p>
+      <p class="mt-2 text-lg font-semibold">{{ formatNumber(launcher.playerStats.completedQuests) }}</p>
+      <p class="mt-1 text-xs text-white/55">выполнено квестов</p>
+    </section>
   </div>
 </template>

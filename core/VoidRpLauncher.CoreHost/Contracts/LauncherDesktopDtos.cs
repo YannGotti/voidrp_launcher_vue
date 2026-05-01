@@ -58,6 +58,7 @@ public sealed class LauncherDashboardPlayerStatsDto
     public long BlocksPlaced { get; set; }
     public long BlocksBroken { get; set; }
     public double CurrentBalance { get; set; }
+    public int CompletedQuests { get; set; }
     public string Source { get; set; } = string.Empty;
     public DateTimeOffset? LastSeenAt { get; set; }
     public DateTimeOffset? LastSyncedAt { get; set; }

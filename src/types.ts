@@ -60,6 +60,7 @@ export interface LauncherDashboardPlayerStatsDto {
   blocksPlaced: number
   blocksBroken: number
   currentBalance: number
+  completedQuests: number
   source: string
   lastSeenAt: string | null
   lastSyncedAt: string | null

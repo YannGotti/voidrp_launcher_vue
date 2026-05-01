@@ -10,6 +10,7 @@ const navItems = [
   { title: 'Главная', to: '/home' },
   { title: 'Государство', to: '/nation' },
   { title: 'Рейтинг', to: '/leaderboard' },
+  { title: 'Карта', to: '/map' },
   { title: 'Гайд', to: '/guide' },
   { title: 'Аккаунт', to: '/account' },
   { title: 'Настройки', to: '/settings' }

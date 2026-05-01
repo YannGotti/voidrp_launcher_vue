@@ -63,6 +63,7 @@ interface LauncherPlayerStats {
   blocksPlaced: number
   blocksBroken: number
   currentBalance: number
+  completedQuests: number
   source: string
   lastSeenAt: string | null
   lastSyncedAt: string | null
@@ -156,7 +157,7 @@ function defaultNationStats(): LauncherNationStats {
 function defaultPlayerStats(): LauncherPlayerStats {
   return {
     minecraftNickname: '', totalPlaytimeMinutes: 0, pvpKills: 0, mobKills: 0, deaths: 0,
-    blocksPlaced: 0, blocksBroken: 0, currentBalance: 0, source: '', lastSeenAt: null, lastSyncedAt: null,
+    blocksPlaced: 0, blocksBroken: 0, currentBalance: 0, completedQuests: 0, source: '', lastSeenAt: null, lastSyncedAt: null,
   }
 }
 function defaultDashboard(): LauncherDashboard {
