@@ -189,6 +189,7 @@ public sealed class LauncherPlayTicketEnvelope
     [JsonPropertyName("minecraftNickname")] public string MinecraftNickname { get; set; } = string.Empty;
     [JsonPropertyName("expiresAtUtc")] public DateTimeOffset ExpiresAtUtc { get; set; }
     [JsonPropertyName("source")] public string Source { get; set; } = "VoidRP Launcher";
+    [JsonPropertyName("launcherProof")] public string LauncherProof { get; set; } = string.Empty;
 }
 
 public sealed class LauncherTokenEnvelope

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useLauncherStore } from '../stores/launcher'
 
@@ -8,9 +9,32 @@ const route = useRoute()
 const navItems = [
   { title: 'Главная', to: '/home' },
   { title: 'Государство', to: '/nation' },
+  { title: 'Рейтинг', to: '/leaderboard' },
+  { title: 'Гайд', to: '/guide' },
   { title: 'Аккаунт', to: '/account' },
   { title: 'Настройки', to: '/settings' }
 ]
+
+const currentTierLabel = ref<string | null>(null)
+
+async function fetchTier(nick: string) {
+  try {
+    const resp = await fetch(
+      `https://api.void-rp.ru/api/v1/progression/player/${encodeURIComponent(nick)}`,
+      { cache: 'no-store' }
+    )
+    if (resp.ok) {
+      const data = await resp.json()
+      currentTierLabel.value = data.current_tier_label ?? null
+    }
+  } catch { }
+}
+
+watch(
+  () => launcher.playerStats.minecraftNickname,
+  (nick) => { if (nick) fetchTier(nick) },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -28,6 +52,13 @@ const navItems = [
               class="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-medium text-violet-200"
             >
               {{ launcher.nation.tag ? `[${launcher.nation.tag}]` : 'Государство' }}
+            </span>
+
+            <span
+              v-if="currentTierLabel"
+              class="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-medium text-indigo-200"
+            >
+              {{ currentTierLabel }}
             </span>
 
             <span class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-medium text-emerald-200">

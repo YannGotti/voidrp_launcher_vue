@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Models;
 using VoidRpLauncher.CoreHost.Models.Account;
+using VoidRpLauncher.CoreHost.Security;
 using VoidRpLauncher.CoreHost.Services;
 
 namespace VoidRpLauncher.CoreHost.Services.Account;
@@ -382,7 +383,10 @@ public sealed class AuthenticatedLaunchService
         progress?.Report(new LaunchProgressInfo { Stage = "Подготавливаем вход", Details = "Запрашиваем игровой ticket для входа через официальный лаунчер...", Percent = 5 });
         _diagnostics.Info("Launch", $"Requesting play ticket for {nickname}.");
         var playTicket = await _authSessionService.RequestPlayTicketAsync(_appVersionService.CurrentVersion, _launcherPathsService.Platform.DisplayName, cancellationToken);
-        await _playTicketStore.SaveAsync(new LauncherPlayTicketEnvelope { Ticket = playTicket.Ticket, MinecraftNickname = playTicket.MinecraftNickname, ExpiresAtUtc = playTicket.ExpiresAt, Source = "VoidRP Launcher" }, cancellationToken);
+        // Proof is computed locally using the embedded key — never comes from the API.
+        // This ensures only the official launcher binary can produce a valid proof.
+        var launcherProof = LauncherProof.Compute(playTicket.Ticket);
+        await _playTicketStore.SaveAsync(new LauncherPlayTicketEnvelope { Ticket = playTicket.Ticket, MinecraftNickname = playTicket.MinecraftNickname, ExpiresAtUtc = playTicket.ExpiresAt, Source = "VoidRP Launcher", LauncherProof = launcherProof }, cancellationToken);
         progress?.Report(new LaunchProgressInfo { Stage = "Авторизация", Details = $"Используем аккаунт {nickname}. Ticket сохранён во временный state-файл.", Percent = 15 });
         await _localMinecraftLaunchService.LaunchAsync(nickname, manifest, maximumRamMb);
         progress?.Report(new LaunchProgressInfo { Stage = "Запуск", Details = "Minecraft запущен.", Percent = 100 });

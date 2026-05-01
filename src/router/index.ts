@@ -5,6 +5,8 @@ import HomeView from '../views/HomeView.vue'
 import NationView from '../views/NationView.vue'
 import AccountView from '../views/AccountView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import LeaderboardView from '../views/LeaderboardView.vue'
+import GuideView from '../views/GuideView.vue'
 
 const routes = [
   {
@@ -20,6 +22,8 @@ const routes = [
       { path: 'nation', component: NationView },
       { path: 'account', component: AccountView },
       { path: 'settings', component: SettingsView },
+      { path: 'leaderboard', component: LeaderboardView },
+      { path: 'guide', component: GuideView },
     ],
   },
   {
