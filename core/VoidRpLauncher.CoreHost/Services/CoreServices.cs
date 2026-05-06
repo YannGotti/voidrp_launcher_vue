@@ -395,12 +395,16 @@ public sealed class FileSyncService
                 SourceUrl = entry.Url
             });
 
-            var needsDownload = NeedsDownload(entry, localPath);
+            var needsDownload = NeedsDownload(entry, localPath, relativePath);
             if (needsDownload)
             {
                 _diagnostics.Info("Sync", $"Downloading: {relativePath}");
                 await logWriter.WriteLineAsync($"[DOWNLOAD] {relativePath}");
                 await DownloadFileAsync(entry, relativePath, localPath, index, orderedFiles.Count, progress, cancellationToken);
+            }
+            else if (IsPlayerWritable(relativePath) && File.Exists(localPath))
+            {
+                await logWriter.WriteLineAsync($"[SKIP-PLAYER] {relativePath}");
             }
             else
             {
@@ -464,19 +468,33 @@ public sealed class FileSyncService
             }
         }
 
-        await SaveStateAsync(stateFilePath, new SyncState { Files = currentManifestPaths.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList() }, cancellationToken);
+        await SaveStateAsync(stateFilePath, new SyncState { Files = currentManifestPaths.Where(p => !IsPlayerWritable(p)).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList() }, cancellationToken);
         progress?.Report(new SyncProgressInfo { Stage = "Готово", Percent = 100, ProcessedFiles = orderedFiles.Count, TotalFiles = orderedFiles.Count, DetailMessage = "Синхронизация завершена." });
         _diagnostics.Info("Sync", $"Sync finished. Log file: {logFilePath}");
     }
 
-    private bool NeedsDownload(LauncherManifestFile entry, string localPath)
+    private bool NeedsDownload(LauncherManifestFile entry, string localPath, string relativePath)
     {
         if (!File.Exists(localPath)) return true;
+        if (IsPlayerWritable(relativePath)) return false;
 
         var fileInfo = new FileInfo(localPath);
         if (fileInfo.Length != entry.Size) return true;
 
         return !_hashService.ComputeSha256(localPath).Equals(entry.Sha256, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPlayerWritable(string relativePath)
+    {
+        var normalized = NormalizeRelativePath(relativePath);
+        return string.Equals(normalized, "options.txt", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "servers.dat", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "resourcepacks", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("resourcepacks/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "shaderpacks", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("shaderpacks/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "config", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task DownloadFileAsync(LauncherManifestFile entry, string relativePath, string localPath, int fileIndex, int totalFiles, IProgress<SyncProgressInfo>? progress, CancellationToken cancellationToken)
@@ -574,7 +592,8 @@ public sealed class FileSyncService
             || normalized.StartsWith("screenshots/", StringComparison.OrdinalIgnoreCase)
             || normalized.StartsWith("logs/", StringComparison.OrdinalIgnoreCase)
             || normalized.StartsWith("crash-reports/", StringComparison.OrdinalIgnoreCase)
-            || normalized.StartsWith("downloads/", StringComparison.OrdinalIgnoreCase);
+            || normalized.StartsWith("downloads/", StringComparison.OrdinalIgnoreCase)
+            || IsPlayerWritable(normalized);
     }
 
     private static string FormatBytes(long bytes)
@@ -736,7 +755,15 @@ public sealed class ClientRepairService
             || normalized.StartsWith("screenshots/", StringComparison.OrdinalIgnoreCase)
             || normalized.StartsWith("logs/", StringComparison.OrdinalIgnoreCase)
             || normalized.StartsWith("crash-reports/", StringComparison.OrdinalIgnoreCase)
-            || normalized.StartsWith("downloads/", StringComparison.OrdinalIgnoreCase);
+            || normalized.StartsWith("downloads/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "options.txt", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "servers.dat", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "resourcepacks", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("resourcepacks/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "shaderpacks", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("shaderpacks/", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "config", StringComparison.OrdinalIgnoreCase)
+            || normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizeRelativePath(string path) => path.Replace('\\', '/').Trim('/');
