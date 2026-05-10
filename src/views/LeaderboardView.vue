@@ -3,6 +3,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useLauncherStore } from '../stores/launcher'
 
 const launcher = useLauncherStore()
+
+const SITE = 'https://void-rp.ru'
+function openPlayer(nick: string) { launcher.openExternal(`${SITE}/u/${nick}`) }
+function openNation(slug: string) { launcher.openExternal(`${SITE}/nation/${slug}`) }
 const PUBLIC_API = 'https://api.void-rp.ru/api/v1'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -287,8 +291,9 @@ onMounted(() => {
               <div
                 v-for="entry in activeTierData.entries"
                 :key="entry.minecraft_nickname"
-                class="flex items-center gap-3 px-4 py-2.5 transition"
-                :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : 'hover:bg-white/[0.02]'"
+                class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+                :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : ''"
+                @click="openPlayer(entry.minecraft_nickname)"
               >
                 <span
                   class="w-6 shrink-0 text-center text-sm font-bold"
@@ -343,8 +348,9 @@ onMounted(() => {
             <div
               v-for="entry in activePlayerCategory.entries"
               :key="entry.minecraft_nickname"
-              class="flex items-center gap-3 px-4 py-2.5 transition"
-              :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : 'hover:bg-white/[0.02]'"
+              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : ''"
+              @click="openPlayer(entry.minecraft_nickname)"
             >
               <span
                 class="w-6 shrink-0 text-center text-sm font-bold"
@@ -399,7 +405,8 @@ onMounted(() => {
             <div
               v-for="nation in sortedNations"
               :key="nation.slug"
-              class="flex items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.02]"
+              class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              @click="openNation(nation.slug)"
             >
               <span
                 class="w-6 shrink-0 text-center text-sm font-bold"
