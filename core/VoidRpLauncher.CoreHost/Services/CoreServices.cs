@@ -476,6 +476,7 @@ public sealed class FileSyncService
     private bool NeedsDownload(LauncherManifestFile entry, string localPath, string relativePath)
     {
         if (!File.Exists(localPath)) return true;
+        if (entry.AlwaysOverwrite) return true;
         if (IsPlayerWritable(relativePath)) return false;
 
         var fileInfo = new FileInfo(localPath);

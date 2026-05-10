@@ -30,6 +30,33 @@ const tpCommands = [
   { cmd: '/tpdeny', desc: 'Отклонить запрос' },
 ]
 
+const nationMemberCommands = [
+  { cmd: '/nationtreasury', desc: 'Баланс казны, территория и престиж государства (алиас: /ntreasury)' },
+  { cmd: '/nationtreasuryhistory', desc: 'Последние 5 операций с казной (алиас: /ntreasuryhistory)' },
+  { cmd: '/nationdonate <сумма> [комментарий]', desc: 'Задонатить деньги в казну своего государства (алиас: /ndonate)' },
+  { cmd: '/marketprice [предмет]', desc: 'Рыночная цена предмета в руке или по названию (алиас: /mprice, /price)' },
+  { cmd: '/nmarket', desc: 'Открыть рынок государств в GUI (алиас: /nm, /nationmarket)' },
+]
+
+const nationOfficerCommands = [
+  { cmd: '/nationwithdraw <сумма> [комментарий]', desc: 'Снять деньги из казны на свой баланс (алиас: /nwithdraw)' },
+  { cmd: '/nmarket sell <кол-во|all> <цена>', desc: 'Выставить предмет из руки на рынок своего государства' },
+  { cmd: '/nmarket listings', desc: 'Список активных лотов своего государства' },
+  { cmd: '/nmarket cancel <id>', desc: 'Снять лот с рынка и вернуть предметы' },
+  { cmd: '/nmarket confirm', desc: 'Подтвердить выставление лота с нестандартной ценой' },
+  { cmd: '/nsetcapital', desc: 'Установить столицу в текущей позиции — только для главы государства' },
+]
+
+const tierGates = [
+  { epoch: 'Эпоха механизмов', item: 'Андезитовая машинная рама', mod: 'Create', color: '#f59e0b' },
+  { epoch: 'Эпоха стали',      item: 'Стальной корпус',           mod: 'Mekanism', color: '#38bdf8' },
+  { epoch: 'Эпоха автоматизации', item: 'МЭ-контроллер',          mod: 'AE2', color: '#a78bfa' },
+  { epoch: 'Квантовая эпоха',  item: 'Квантовая схема',           mod: 'AE2 + Mekanism', color: '#22d3ee' },
+  { epoch: 'Эпоха реакторов',  item: 'Ядро реактора',             mod: 'Extreme Reactors 2', color: '#fb923c' },
+  { epoch: 'Эпоха дракона',    item: 'Дракониевое ядро',          mod: 'Draconic Evolution', color: '#f472b6' },
+  { epoch: 'Эндгейм',          item: 'Катализатор бесконечности', mod: 'Avaritia', color: '#4ade80' },
+]
+
 const modCategories = [
   {
     name: 'Технологии',
@@ -155,6 +182,73 @@ const progressionRoute = [
         </div>
       </div>
 
+    </div>
+
+    <!-- Nation commands: 2 columns -->
+    <div class="grid grid-cols-2 gap-3">
+
+      <!-- Nation member commands -->
+      <div class="rounded-[18px] border border-white/10 bg-white/[0.035] p-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+          <p class="text-xs font-semibold text-white/80">Государство — казна и рынок <span class="text-white/35">(все участники)</span></p>
+        </div>
+        <p class="mb-3 text-[11px] leading-5 text-white/40">
+          Доступны всем игрокам, состоящим в государстве.
+        </p>
+        <div class="space-y-1.5">
+          <div
+            v-for="row in nationMemberCommands"
+            :key="row.cmd"
+            class="flex flex-wrap items-start gap-2 rounded-xl bg-white/[0.03] px-2.5 py-1.5"
+          >
+            <code class="shrink-0 rounded-md border border-amber-400/15 bg-amber-400/8 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-300">{{ row.cmd }}</code>
+            <span class="pt-0.5 text-[11px] leading-4 text-white/50">{{ row.desc }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nation officer/leader commands -->
+      <div class="rounded-[18px] border border-white/10 bg-white/[0.035] p-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-red-400"></span>
+          <p class="text-xs font-semibold text-white/80">Государство — управление <span class="text-white/35">(офицеры и глава)</span></p>
+        </div>
+        <p class="mb-3 text-[11px] leading-5 text-white/40">
+          Снятие из казны и управление лотами. /nsetcapital — только для главы.
+        </p>
+        <div class="space-y-1.5">
+          <div
+            v-for="row in nationOfficerCommands"
+            :key="row.cmd"
+            class="flex flex-wrap items-start gap-2 rounded-xl bg-white/[0.03] px-2.5 py-1.5"
+          >
+            <code class="shrink-0 rounded-md border border-red-400/15 bg-red-400/8 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-red-300">{{ row.cmd }}</code>
+            <span class="pt-0.5 text-[11px] leading-4 text-white/50">{{ row.desc }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Tier gates -->
+    <div class="rounded-[18px] border border-white/10 bg-white/[0.035] p-4">
+      <p class="mb-1 text-[10px] uppercase tracking-[0.22em] text-white/35">Эпохи прогрессии — что нужно скрафтить</p>
+      <p class="mb-4 text-[11px] text-white/40">При первом крафте предмета сервер фиксирует эпоху и сообщает всем. Каждая открывается один раз.</p>
+      <div class="grid grid-cols-4 gap-2">
+        <div
+          v-for="gate in tierGates"
+          :key="gate.epoch"
+          class="rounded-[14px] border border-white/[0.07] bg-white/[0.025] p-3"
+        >
+          <div class="mb-1.5 flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full" :style="{ background: gate.color }"></span>
+            <span class="text-[9px] font-bold uppercase tracking-[0.12em]" :style="{ color: gate.color }">{{ gate.epoch }}</span>
+          </div>
+          <p class="text-[11px] font-semibold leading-4 text-white/85">{{ gate.item }}</p>
+          <p class="mt-0.5 text-[10px] text-white/35">{{ gate.mod }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- Mods reference -->

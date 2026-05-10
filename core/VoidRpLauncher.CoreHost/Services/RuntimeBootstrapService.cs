@@ -225,7 +225,8 @@ public sealed class RuntimeBootstrapService
                 Path = x.Path ?? string.Empty,
                 Url = x.Url ?? string.Empty,
                 Size = x.Size,
-                Sha256 = x.Sha256 ?? string.Empty
+                Sha256 = x.Sha256 ?? string.Empty,
+                AlwaysOverwrite = x.AlwaysOverwrite
             })
             .ToList() ?? new List<LauncherManifestFile>();
 
@@ -490,5 +491,6 @@ public sealed class RuntimeBootstrapService
         public long Size { get; set; }
         public string? Sha256 { get; set; }
         public string? Url { get; set; }
+        public bool AlwaysOverwrite { get; set; }
     }
 }
