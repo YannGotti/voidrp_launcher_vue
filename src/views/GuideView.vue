@@ -45,6 +45,7 @@ const nationOfficerCommands = [
   { cmd: '/nmarket cancel <id>', desc: 'Снять лот с рынка и вернуть предметы' },
   { cmd: '/nmarket confirm', desc: 'Подтвердить выставление лота с нестандартной ценой' },
   { cmd: '/nsetcapital', desc: 'Установить столицу в текущей позиции — только для главы государства' },
+  { cmd: 'Сайт → Студия → Участники', desc: 'Выдать звание участнику: офицер — рядовым, глава — всем. Отображается в чате.', web: true },
 ]
 
 const tierGates = [
@@ -223,7 +224,12 @@ const progressionRoute = [
             :key="row.cmd"
             class="flex flex-wrap items-start gap-2 rounded-xl bg-white/[0.03] px-2.5 py-1.5"
           >
-            <code class="shrink-0 rounded-md border border-red-400/15 bg-red-400/8 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-red-300">{{ row.cmd }}</code>
+            <code
+              class="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold"
+              :class="row.web
+                ? 'border border-violet-400/20 bg-violet-400/8 text-violet-300'
+                : 'border border-red-400/15 bg-red-400/8 text-red-300'"
+            >{{ row.cmd }}</code>
             <span class="pt-0.5 text-[11px] leading-4 text-white/50">{{ row.desc }}</span>
           </div>
         </div>
