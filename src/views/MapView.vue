@@ -7,7 +7,9 @@ const failed = ref(false)
 const MAP_URL = 'https://void-rp.ru/map/'
 
 function onLoad() { loaded.value = true }
-function onLoadFail() { failed.value = true }
+function onLoadFail(_e: unknown, _code: number, _desc: string, _url: string, isMainFrame: boolean) {
+  if (isMainFrame) failed.value = true
+}
 
 function openInBrowser() {
   window.desktopAPI?.openExternal?.(MAP_URL)
@@ -18,10 +20,7 @@ function openInBrowser() {
   <div class="flex h-full flex-col gap-3" style="height: calc(100vh - 220px); min-height: 420px;">
 
     <div class="flex items-center justify-between">
-      <div>
-        <p class="text-[10px] uppercase tracking-[0.25em] text-violet-300/70">Карта мира</p>
-        <h2 class="mt-0.5 text-lg font-semibold">Dynmap</h2>
-      </div>
+      <p class="text-sm font-semibold text-white/80">Онлайн карта</p>
       <button
         class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60 transition hover:bg-white/8 hover:text-white"
         @click="openInBrowser"

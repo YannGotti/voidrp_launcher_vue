@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -698,6 +698,11 @@ function registerIpcHandlers() {
 
 app.whenReady().then(async () => {
   registerIpcHandlers()
+
+  // Allow all permission requests from webviews (needed for WebGL/GPU in map view)
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(true)
+  })
 
   const autoUpdateStarted = await runStartupAutoUpdate()
   if (autoUpdateStarted) {
