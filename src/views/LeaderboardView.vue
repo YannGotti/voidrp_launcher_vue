@@ -9,7 +9,7 @@ function openPlayer(nick: string) { launcher.openExternal(`${SITE}/u/${nick}`) }
 function openNation(slug: string) { launcher.openExternal(`${SITE}/nation/${slug}`) }
 const PUBLIC_API = 'https://api.void-rp.ru/api/v1'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface ProgressionTier { tier_name: string; tier_label: string; unlocked_at: string }
 interface PlayerProgressionData {
@@ -37,7 +37,13 @@ interface NationRankingResponse { items: NationRankingItem[] }
 type MainTab = 'progression' | 'players' | 'nations'
 const mainTab = ref<MainTab>('progression')
 
-// ─── Progression ──────────────────────────────────────────────────────────────
+const TAB_ICONS: Record<MainTab, string> = {
+  progression: 'M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z',
+  players:     'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z',
+  nations:     'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z',
+}
+
+// ─── Progression ─────────────────────────────────────────────────────────────
 
 const TIER_ICONS: Record<string, string> = {
   create_age: '⚙️', mekanism_age: '🔩', ae2_age: '💾',
@@ -76,17 +82,12 @@ const activeTierData = computed<TierLeaderboard | null>(() => {
   return leaderboard.value.tiers.find(t => t.tier_name === activeTier.value) ?? null
 })
 
-// ─── Player top ───────────────────────────────────────────────────────────────
+// ─── Player top ──────────────────────────────────────────────────────────────
 
 const loadingPlayers = ref(false)
 const playersData = ref<PlayerTopResponse | null>(null)
 const activePlayerCat = ref('')
 const playersError = ref('')
-
-const PLAYER_ICONS: Record<string, string> = {
-  balance: '💰', pvp_kills: '⚔️', mob_kills: '🗡️', playtime: '⏱️',
-  blocks_broken: '⛏️', blocks_placed: '🏗️', completed_quests: '📜', deaths: '☠️',
-}
 
 const activePlayerCategory = computed<PlayerTopCategory | null>(() => {
   if (!playersData.value || !activePlayerCat.value) return null
@@ -107,13 +108,13 @@ const nationsError = ref('')
 
 type NationKey = keyof NationRankingItem
 
-const NATION_METRICS: { key: NationKey; label: string; icon: string; fmt: (n: NationRankingItem) => string }[] = [
-  { key: 'score',                  label: 'Общий',      icon: '🏆', fmt: n => String(Math.floor(n.score)) },
-  { key: 'treasury_balance',       label: 'Казна',      icon: '💰', fmt: n => new Intl.NumberFormat('ru-RU').format(Math.floor(n.treasury_balance)) + ' ₽' },
-  { key: 'territory_points',       label: 'Территория', icon: '🗺️', fmt: n => new Intl.NumberFormat('ru-RU').format(n.territory_points) },
-  { key: 'prestige_score',         label: 'Престиж',    icon: '⭐', fmt: n => new Intl.NumberFormat('ru-RU').format(n.prestige_score) },
-  { key: 'pvp_kills',              label: 'PvP',        icon: '⚔️', fmt: n => new Intl.NumberFormat('ru-RU').format(n.pvp_kills) },
-  { key: 'total_playtime_minutes', label: 'Онлайн',     icon: '⏱️', fmt: n => Math.floor(n.total_playtime_minutes / 60) + ' ч' },
+const NATION_METRICS: { key: NationKey; label: string; fmt: (n: NationRankingItem) => string }[] = [
+  { key: 'score',                  label: 'Общий',      fmt: n => String(Math.floor(n.score)) },
+  { key: 'treasury_balance',       label: 'Казна',      fmt: n => new Intl.NumberFormat('ru-RU').format(Math.floor(n.treasury_balance)) },
+  { key: 'territory_points',       label: 'Территория', fmt: n => new Intl.NumberFormat('ru-RU').format(n.territory_points) },
+  { key: 'prestige_score',         label: 'Престиж',    fmt: n => new Intl.NumberFormat('ru-RU').format(n.prestige_score) },
+  { key: 'pvp_kills',              label: 'PvP',        fmt: n => new Intl.NumberFormat('ru-RU').format(n.pvp_kills) },
+  { key: 'total_playtime_minutes', label: 'Онлайн',     fmt: n => Math.floor(n.total_playtime_minutes / 60) + ' ч' },
 ]
 
 const sortedNations = computed(() => {
@@ -197,6 +198,25 @@ function fmtDateShort(iso: string | null) {
   return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short' }).format(new Date(iso))
 }
 
+function rankClass(rank: number) {
+  if (rank === 1) return 'text-yellow-400'
+  if (rank === 2) return 'text-slate-300'
+  if (rank === 3) return 'text-amber-600'
+  return 'text-white/25'
+}
+function rankRowClass(rank: number) {
+  if (rank === 1) return 'bg-yellow-400/[0.06]'
+  if (rank === 2) return 'bg-slate-300/[0.04]'
+  if (rank === 3) return 'bg-amber-600/[0.04]'
+  return ''
+}
+function rankLabel(rank: number) {
+  if (rank === 1) return '🥇'
+  if (rank === 2) return '🥈'
+  if (rank === 3) return '🥉'
+  return String(rank)
+}
+
 onMounted(() => {
   loadLeaderboard()
   loadMyProgression()
@@ -206,26 +226,29 @@ onMounted(() => {
 <template>
   <div class="space-y-3">
 
-    <!-- Main tab switcher -->
-    <div class="flex gap-1.5 rounded-[18px] border border-white/10 bg-white/[0.03] p-1.5">
+    <!-- ── Main tab bar ─────────────────────────────────────────── -->
+    <div class="flex gap-1 rounded-[18px] border border-white/10 bg-white/[0.03] p-1">
       <button
         v-for="tab in (['progression', 'players', 'nations'] as MainTab[])"
         :key="tab"
         type="button"
-        class="flex-1 rounded-[14px] py-1.5 text-xs font-semibold transition"
-        :class="mainTab === tab ? 'bg-violet-500/25 text-violet-200' : 'text-white/45 hover:text-white/70'"
+        class="flex flex-1 items-center justify-center gap-2 rounded-[13px] py-2 text-xs font-semibold transition"
+        :class="mainTab === tab ? 'bg-violet-500/20 text-violet-200' : 'text-white/40 hover:text-white/70'"
         @click="switchTab(tab)"
       >
-        {{ tab === 'progression' ? '⚙️ Прогрессия' : tab === 'players' ? '⚔️ Игроки' : '🏰 Государства' }}
+        <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" :d="TAB_ICONS[tab]" />
+        </svg>
+        {{ tab === 'progression' ? 'Прогрессия' : tab === 'players' ? 'Игроки' : 'Государства' }}
       </button>
     </div>
 
-    <!-- ─── PROGRESSION ─────────────────────────────────────────────────── -->
+    <!-- ─── PROGRESSION ───────────────────────────────────────── -->
     <template v-if="mainTab === 'progression'">
 
-      <!-- Моя прогрессия -->
-      <section class="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
-        <p class="text-[10px] uppercase tracking-[0.22em] text-white/45">Моя прогрессия</p>
+      <!-- My progression -->
+      <section class="rounded-[20px] border border-white/10 bg-white/[0.035] p-4">
+        <p class="text-[10px] uppercase tracking-[0.22em] text-white/40">Моя прогрессия</p>
         <div v-if="loadingMine" class="mt-3 flex gap-1.5">
           <div v-for="i in 7" :key="i" class="h-8 flex-1 animate-pulse rounded-xl bg-white/6"></div>
         </div>
@@ -248,7 +271,7 @@ onMounted(() => {
               <span class="text-sm leading-none">{{ tier.icon }}</span>
               <span class="font-medium">{{ tier.tier_label }}</span>
               <span v-if="tier.myRank && tier.myRank <= 3" class="text-[10px] opacity-70">
-                {{ tier.myRank === 1 ? '🥇' : tier.myRank === 2 ? '🥈' : '🥉' }}
+                {{ rankLabel(tier.myRank) }}
               </span>
             </div>
           </div>
@@ -256,17 +279,20 @@ onMounted(() => {
         <p v-else class="mt-3 text-xs text-white/40">Прогрессия появится после первого захода в игру</p>
       </section>
 
-      <!-- Лидерборд по эпохам -->
-      <section class="rounded-[20px] border border-white/10 bg-white/[0.03]">
+      <!-- Tier leaderboard -->
+      <section class="overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.035]">
         <div class="border-b border-white/8 px-4 py-3">
-          <p class="text-[10px] uppercase tracking-[0.22em] text-white/45">Рейтинг эпох</p>
-          <h2 class="mt-1 text-base font-semibold text-white/90">Первооткрыватели</h2>
+          <p class="text-[10px] uppercase tracking-[0.22em] text-white/40">Рейтинг эпох</p>
+          <h2 class="mt-0.5 text-base font-semibold">Первооткрыватели</h2>
         </div>
-        <div v-if="loadingLeaderboard" class="p-4 space-y-2">
+
+        <div v-if="loadingLeaderboard" class="space-y-2 p-4">
           <div class="h-8 animate-pulse rounded-xl bg-white/6"></div>
           <div v-for="i in 5" :key="i" class="h-10 animate-pulse rounded-xl bg-white/4"></div>
         </div>
+
         <template v-else-if="leaderboard">
+          <!-- Tier selector -->
           <div class="flex flex-wrap gap-1.5 px-4 py-3">
             <button
               v-for="tier in enrichedTiers"
@@ -280,139 +306,136 @@ onMounted(() => {
             >
               <span class="text-sm leading-none">{{ tier.icon }}</span>
               <span>{{ tier.tier_label }}</span>
-              <span class="ml-0.5 opacity-55">{{ tier.total }}</span>
+              <span class="ml-0.5 opacity-50">{{ tier.total }}</span>
             </button>
           </div>
+
+          <!-- Entries -->
           <div v-if="activeTierData" class="border-t border-white/6">
-            <div v-if="activeTierData.entries.length === 0" class="px-4 py-6 text-center text-xs text-white/35">
+            <div v-if="activeTierData.entries.length === 0" class="px-4 py-8 text-center text-xs text-white/30">
               Пока никто не открыл эту эпоху
             </div>
-            <div v-else class="divide-y divide-white/5">
+            <div v-else class="divide-y divide-white/[0.05]">
               <div
                 v-for="entry in activeTierData.entries"
                 :key="entry.minecraft_nickname"
                 class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
-                :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : ''"
+                :class="[
+                  entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase()
+                    ? 'bg-violet-500/10' : rankRowClass(entry.rank)
+                ]"
                 @click="openPlayer(entry.minecraft_nickname)"
               >
-                <span
-                  class="w-6 shrink-0 text-center text-sm font-bold"
-                  :class="entry.rank === 1 ? 'text-yellow-400' : entry.rank === 2 ? 'text-slate-300' : entry.rank === 3 ? 'text-amber-600' : 'text-white/30'"
-                >
-                  {{ entry.rank <= 3 ? (entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉') : entry.rank }}
+                <span class="w-6 shrink-0 text-center text-sm font-bold" :class="rankClass(entry.rank)">
+                  {{ rankLabel(entry.rank) }}
                 </span>
                 <img :src="headUrl(entry.minecraft_nickname)" :alt="entry.minecraft_nickname" class="h-6 w-6 shrink-0 rounded-md" loading="lazy" />
-                <p class="min-w-0 flex-1 truncate text-sm font-medium text-white/90">{{ entry.minecraft_nickname }}</p>
-                <p class="shrink-0 text-[11px] text-white/40">{{ fmtDate(entry.unlocked_at) }}</p>
+                <p class="min-w-0 flex-1 truncate text-sm font-medium text-white/90">
+                  {{ entry.minecraft_nickname }}
+                  <span v-if="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase()" class="ml-1.5 text-[10px] font-normal text-violet-300/70">· ты</span>
+                </p>
+                <p class="shrink-0 text-[11px] text-white/35">{{ fmtDate(entry.unlocked_at) }}</p>
               </div>
             </div>
           </div>
         </template>
-        <div v-else class="px-4 py-6 text-center text-xs text-white/35">{{ progressionError || 'Нет данных' }}</div>
+
+        <div v-else class="px-4 py-8 text-center text-xs text-white/30">{{ progressionError || 'Нет данных' }}</div>
       </section>
     </template>
 
-    <!-- ─── PLAYERS ────────────────────────────────────────────────────── -->
+    <!-- ─── PLAYERS ─────────────────────────────────────────────── -->
     <template v-else-if="mainTab === 'players'">
-      <section class="rounded-[20px] border border-white/10 bg-white/[0.03]">
+      <section class="overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.035]">
         <div class="border-b border-white/8 px-4 py-3">
-          <p class="text-[10px] uppercase tracking-[0.22em] text-white/45">Топ игроков</p>
-          <h2 class="mt-1 text-base font-semibold text-white/90">Лучшие сезона</h2>
+          <p class="text-[10px] uppercase tracking-[0.22em] text-white/40">Топ игроков</p>
+          <h2 class="mt-0.5 text-base font-semibold">Лучшие сезона</h2>
         </div>
 
-        <div v-if="loadingPlayers" class="p-4 space-y-2">
+        <div v-if="loadingPlayers" class="space-y-2 p-4">
           <div class="h-8 animate-pulse rounded-xl bg-white/6"></div>
-          <div v-for="i in 10" :key="i" class="h-10 animate-pulse rounded-xl bg-white/4"></div>
+          <div v-for="i in 8" :key="i" class="h-10 animate-pulse rounded-xl bg-white/4"></div>
         </div>
 
         <template v-else-if="playersData">
-          <!-- Category tabs -->
           <div class="flex flex-wrap gap-1.5 px-4 py-3">
             <button
               v-for="cat in playersData.categories"
               :key="cat.key"
               type="button"
-              class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition"
+              class="rounded-full px-2.5 py-1 text-[11px] font-medium transition"
               :class="activePlayerCat === cat.key
                 ? 'bg-violet-500/25 text-violet-200'
                 : 'bg-white/6 text-white/50 hover:bg-white/10 hover:text-white/80'"
               @click="activePlayerCat = cat.key"
-            >
-              <span class="leading-none">{{ PLAYER_ICONS[cat.key] ?? '📊' }}</span>
-              <span>{{ cat.label }}</span>
-            </button>
+            >{{ cat.label }}</button>
           </div>
 
-          <!-- Entries -->
-          <div v-if="activePlayerCategory" class="border-t border-white/6 divide-y divide-white/5">
+          <div v-if="activePlayerCategory" class="divide-y divide-white/[0.05] border-t border-white/6">
             <div
               v-for="entry in activePlayerCategory.entries"
               :key="entry.minecraft_nickname"
               class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
-              :class="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase() ? 'bg-violet-500/10' : ''"
+              :class="[
+                entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase()
+                  ? 'bg-violet-500/10' : rankRowClass(entry.rank)
+              ]"
               @click="openPlayer(entry.minecraft_nickname)"
             >
-              <span
-                class="w-6 shrink-0 text-center text-sm font-bold"
-                :class="entry.rank === 1 ? 'text-yellow-400' : entry.rank === 2 ? 'text-slate-300' : entry.rank === 3 ? 'text-amber-600' : 'text-white/30'"
-              >
-                {{ entry.rank <= 3 ? (entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉') : entry.rank }}
+              <span class="w-6 shrink-0 text-center text-sm font-bold" :class="rankClass(entry.rank)">
+                {{ rankLabel(entry.rank) }}
               </span>
               <img :src="headUrl(entry.minecraft_nickname)" :alt="entry.minecraft_nickname" class="h-6 w-6 shrink-0 rounded-md" loading="lazy" />
-              <p class="min-w-0 flex-1 truncate text-sm font-medium text-white/90">{{ entry.minecraft_nickname }}</p>
+              <p class="min-w-0 flex-1 truncate text-sm font-medium text-white/90">
+                {{ entry.minecraft_nickname }}
+                <span v-if="entry.minecraft_nickname.toLowerCase() === myNick?.toLowerCase()" class="ml-1.5 text-[10px] font-normal text-violet-300/70">· ты</span>
+              </p>
               <p class="shrink-0 text-sm font-semibold text-white/80">{{ fmtPlayerValue(entry.value, activePlayerCategory.unit) }}</p>
             </div>
           </div>
         </template>
 
-        <div v-else class="px-4 py-6 text-center text-xs text-white/35">{{ playersError || 'Нет данных' }}</div>
+        <div v-else class="px-4 py-8 text-center text-xs text-white/30">{{ playersError || 'Нет данных' }}</div>
       </section>
     </template>
 
-    <!-- ─── NATIONS ────────────────────────────────────────────────────── -->
+    <!-- ─── NATIONS ──────────────────────────────────────────────── -->
     <template v-else-if="mainTab === 'nations'">
-      <section class="rounded-[20px] border border-white/10 bg-white/[0.03]">
+      <section class="overflow-hidden rounded-[20px] border border-white/10 bg-white/[0.035]">
         <div class="border-b border-white/8 px-4 py-3">
-          <p class="text-[10px] uppercase tracking-[0.22em] text-white/45">Рейтинг государств</p>
-          <h2 class="mt-1 text-base font-semibold text-white/90">Силы сезона</h2>
+          <p class="text-[10px] uppercase tracking-[0.22em] text-white/40">Рейтинг государств</p>
+          <h2 class="mt-0.5 text-base font-semibold">Силы сезона</h2>
         </div>
 
-        <div v-if="loadingNations" class="p-4 space-y-2">
+        <div v-if="loadingNations" class="space-y-2 p-4">
           <div class="h-8 animate-pulse rounded-xl bg-white/6"></div>
-          <div v-for="i in 8" :key="i" class="h-12 animate-pulse rounded-xl bg-white/4"></div>
+          <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded-xl bg-white/4"></div>
         </div>
 
         <template v-else-if="nationsData">
-          <!-- Metric tabs -->
           <div class="flex flex-wrap gap-1.5 px-4 py-3">
             <button
               v-for="m in NATION_METRICS"
               :key="m.key"
               type="button"
-              class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition"
+              class="rounded-full px-2.5 py-1 text-[11px] font-medium transition"
               :class="activeNationMetric === m.key
                 ? 'bg-violet-500/25 text-violet-200'
                 : 'bg-white/6 text-white/50 hover:bg-white/10 hover:text-white/80'"
               @click="activeNationMetric = m.key"
-            >
-              <span class="leading-none">{{ m.icon }}</span>
-              <span>{{ m.label }}</span>
-            </button>
+            >{{ m.label }}</button>
           </div>
 
-          <!-- Entries -->
-          <div class="border-t border-white/6 divide-y divide-white/5">
+          <div class="divide-y divide-white/[0.05] border-t border-white/6">
             <div
               v-for="nation in sortedNations"
               :key="nation.slug"
               class="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition hover:bg-white/[0.04]"
+              :class="rankRowClass(nation.rank)"
               @click="openNation(nation.slug)"
             >
-              <span
-                class="w-6 shrink-0 text-center text-sm font-bold"
-                :class="nation.rank === 1 ? 'text-yellow-400' : nation.rank === 2 ? 'text-slate-300' : nation.rank === 3 ? 'text-amber-600' : 'text-white/30'"
-              >
-                {{ nation.rank <= 3 ? (nation.rank === 1 ? '🥇' : nation.rank === 2 ? '🥈' : '🥉') : nation.rank }}
+              <span class="w-6 shrink-0 text-center text-sm font-bold" :class="rankClass(nation.rank)">
+                {{ rankLabel(nation.rank) }}
               </span>
               <div
                 v-if="nation.icon_url"
@@ -422,7 +445,7 @@ onMounted(() => {
               </div>
               <div
                 v-else
-                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-[10px] font-bold text-white/60"
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-[10px] font-bold text-white/55"
               >{{ (nation.tag || '??').slice(0, 2) }}</div>
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold text-white/90">{{ nation.title }}</p>
@@ -430,13 +453,13 @@ onMounted(() => {
               </div>
               <p class="shrink-0 text-sm font-bold text-white/80">{{ activeNationMetricDef.fmt(nation) }}</p>
             </div>
-            <div v-if="sortedNations.length === 0" class="px-4 py-6 text-center text-xs text-white/35">
+            <div v-if="sortedNations.length === 0" class="px-4 py-8 text-center text-xs text-white/30">
               Нет данных по государствам
             </div>
           </div>
         </template>
 
-        <div v-else class="px-4 py-6 text-center text-xs text-white/35">{{ nationsError || 'Нет данных' }}</div>
+        <div v-else class="px-4 py-8 text-center text-xs text-white/30">{{ nationsError || 'Нет данных' }}</div>
       </section>
     </template>
 

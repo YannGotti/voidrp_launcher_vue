@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useLauncherStore } from './stores/launcher'
 import ToastHost from './components/ToastHost.vue'
+import SplashScreen from './components/SplashScreen.vue'
 
 const launcher = useLauncherStore()
 const router = useRouter()
@@ -46,5 +47,25 @@ watch(
       <RouterView />
       <ToastHost />
     </div>
+
+    <Transition name="splash">
+      <SplashScreen v-if="!launcher.initialized" :status-text="launcher.statusText" />
+    </Transition>
   </div>
 </template>
+
+<style>
+.splash-enter-active {
+  transition: opacity 0.3s ease;
+}
+.splash-enter-from {
+  opacity: 0;
+}
+.splash-leave-active {
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.splash-leave-to {
+  opacity: 0;
+  transform: scale(1.05);
+}
+</style>
