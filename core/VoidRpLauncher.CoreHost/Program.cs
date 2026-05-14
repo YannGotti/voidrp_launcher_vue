@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.Json;
 using VoidRpLauncher.CoreHost.Configuration;
 using VoidRpLauncher.CoreHost.Contracts;
+using VoidRpLauncher.CoreHost.Models;
 using VoidRpLauncher.CoreHost.Services;
 using VoidRpLauncher.CoreHost.Services.Account;
 
@@ -96,6 +97,12 @@ app.MapPost("/api/settings/reset", (LauncherFacadeService facade) =>
 
 app.MapPost("/api/diagnostics/clear", (LauncherFacadeService facade) =>
     Results.Ok(facade.ClearDiagnostics()));
+
+app.MapGet("/api/mods", async (LauncherFacadeService facade) =>
+    Results.Ok(await facade.GetModsAsync()));
+
+app.MapPost("/api/mods/toggle", async (ModToggleDto dto, LauncherFacadeService facade) =>
+    Results.Ok(await facade.ToggleModAsync(dto.Path, dto.Enabled)));
 
 app.MapGet("/api/skin", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.GetSkinAsync(CancellationToken.None)));

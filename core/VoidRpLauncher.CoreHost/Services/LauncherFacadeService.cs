@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using Microsoft.AspNetCore.Http;
 using VoidRpLauncher.CoreHost.Configuration;
@@ -10,6 +12,14 @@ namespace VoidRpLauncher.CoreHost.Services;
 
 public sealed class LauncherFacadeService
 {
+    private static readonly string[] ConfigPathsToSync =
+    {
+        "options.txt",
+        "config/sodium-options.json",
+        "config/sodium-extra-options.json",
+        "config/sodium-extra.json",
+    };
+
     private readonly AppEndpointsOptions _endpoints;
     private readonly ManifestService _manifestService;
     private readonly FileSyncService _fileSyncService;
@@ -23,6 +33,7 @@ public sealed class LauncherFacadeService
     private readonly DiagnosticsService _diagnostics;
     private readonly AppVersionService _appVersionService;
     private readonly SemaphoreSlim _operationLock = new(1, 1);
+    private LauncherManifest? _cachedManifest;
 
     public LauncherFacadeService(
         AppEndpointsOptions endpoints,
@@ -92,6 +103,9 @@ public sealed class LauncherFacadeService
                     ? await TryLoadDashboardAsync(cancellationToken)
                     : null;
 
+                if (snapshot?.IsAuthenticated == true)
+                    await TryLoadModPrefsAsync(cancellationToken);
+
                 _stateService.ApplySnapshot(snapshot);
                 _stateService.ApplyDashboard(dashboard);
                 _stateService.SetInitialized(true);
@@ -129,6 +143,7 @@ public sealed class LauncherFacadeService
                 }
 
                 var dashboard = await TryLoadDashboardAsync(cancellationToken);
+                await TryLoadModPrefsAsync(cancellationToken);
                 _stateService.ApplySnapshot(snapshot);
                 _stateService.ApplyDashboard(dashboard);
                 _stateService.SetStatus("Вход выполнен.");
@@ -213,11 +228,17 @@ public sealed class LauncherFacadeService
                 _stateService.SetProgress("Подготовка", "Загружаем pack manifest...", 0);
 
                 var manifest = await _manifestService.LoadAsync(_endpoints.PackManifestUrl, cancellationToken);
+                _cachedManifest = manifest;
                 if (!string.IsNullOrWhiteSpace(manifest.MinLauncherVersion) &&
                     !_appVersionService.IsCurrentVersionAtLeast(manifest.MinLauncherVersion))
                 {
                     throw new InvalidOperationException($"Требуется обновление лаунчера до версии {manifest.MinLauncherVersion} или выше.");
                 }
+
+                var settings = _settingsService.Load();
+                var disabledMods = settings.DisabledMods.Count > 0
+                    ? new HashSet<string>(settings.DisabledMods, StringComparer.OrdinalIgnoreCase)
+                    : null;
 
                 var syncProgress = new Progress<SyncProgressInfo>(info =>
                     _stateService.SetProgress(
@@ -225,16 +246,24 @@ public sealed class LauncherFacadeService
                         BuildSyncDetails(info),
                         ClampPercent(info.Percent)));
 
-                await _fileSyncService.SyncAsync(manifest, syncProgress, cancellationToken);
+                await _fileSyncService.SyncAsync(manifest, (IReadOnlySet<string>?)disabledMods, syncProgress, cancellationToken);
 
-                var memoryMb = _settingsService.Load().MaxRamMb;
+                // Restore per-account config files from server before launching
+                if (_authSessionService.IsAuthenticated)
+                    await RestoreConfigFilesAsync(cancellationToken);
+
+                var memoryMb = settings.MaxRamMb;
                 var launchProgress = new Progress<LaunchProgressInfo>(info =>
                     _stateService.SetProgress(
                         string.IsNullOrWhiteSpace(info.Stage) ? "Запуск" : info.Stage,
                         string.IsNullOrWhiteSpace(info.Details) ? "Запускаем Minecraft..." : info.Details,
                         ClampPercent(info.Percent)));
 
-                await _authenticatedLaunchService.LaunchAsync(manifest, memoryMb, launchProgress, cancellationToken);
+                var gameProcess = await _authenticatedLaunchService.LaunchAsync(manifest, memoryMb, launchProgress, cancellationToken);
+
+                // Fire-and-forget: upload config files when game exits
+                if (_authSessionService.IsAuthenticated)
+                    _ = WatchGameAndUploadConfigsAsync(gameProcess);
 
                 _stateService.ClearProgress();
                 _stateService.SetStatus("Minecraft запущен.");
@@ -341,6 +370,159 @@ public sealed class LauncherFacadeService
     {
         _diagnostics.Clear();
         return OperationResponseDto.Success(GetState(), "Диагностика очищена.");
+    }
+
+    public async Task<ModListDto> GetModsAsync(CancellationToken cancellationToken = default)
+    {
+        LauncherManifest manifest;
+        try
+        {
+            manifest = _cachedManifest ?? await _manifestService.LoadAsync(_endpoints.PackManifestUrl, cancellationToken);
+            _cachedManifest = manifest;
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Mods", $"Failed to load manifest for mods list: {ex.Message}");
+            return new ModListDto { Mods = new List<ModInfoDto>() };
+        }
+
+        var settings = _settingsService.Load();
+        var disabled = new HashSet<string>(settings.DisabledMods, StringComparer.OrdinalIgnoreCase);
+
+        var mods = manifest.Files
+            .Where(f => f.Optional)
+            .Select(f =>
+            {
+                var rel = f.Path.Replace('\\', '/').Trim('/');
+                var display = string.IsNullOrWhiteSpace(f.DisplayName)
+                    ? System.IO.Path.GetFileNameWithoutExtension(f.Path)
+                    : f.DisplayName;
+                return new ModInfoDto
+                {
+                    Path = rel,
+                    DisplayName = display,
+                    Description = f.Description,
+                    Optional = f.Optional,
+                    Required = f.Required,
+                    Enabled = f.Required || !disabled.Contains(rel),
+                };
+            })
+            .ToList();
+
+        return new ModListDto { Mods = mods };
+    }
+
+    public async Task<ModToggleResponseDto> ToggleModAsync(string path, bool enabled, CancellationToken cancellationToken = default)
+    {
+        var rel = (path ?? string.Empty).Replace('\\', '/').Trim('/');
+        if (string.IsNullOrWhiteSpace(rel))
+            return new ModToggleResponseDto { Ok = false, Message = "Путь к моду не указан." };
+
+        // Check if mod is required
+        var manifest = _cachedManifest;
+        if (manifest is not null)
+        {
+            var entry = manifest.Files.FirstOrDefault(f =>
+                string.Equals(f.Path.Replace('\\', '/').Trim('/'), rel, StringComparison.OrdinalIgnoreCase));
+            if (entry?.Required == true)
+                return new ModToggleResponseDto { Ok = false, Message = "Этот мод обязателен и не может быть отключён." };
+        }
+
+        var settings = _settingsService.Load();
+        if (enabled)
+            settings.DisabledMods.RemoveAll(m => string.Equals(m, rel, StringComparison.OrdinalIgnoreCase));
+        else if (!settings.DisabledMods.Any(m => string.Equals(m, rel, StringComparison.OrdinalIgnoreCase)))
+            settings.DisabledMods.Add(rel);
+
+        _settingsService.Save(settings);
+
+        if (_authSessionService.IsAuthenticated)
+        {
+            try { await _authSessionService.SaveModPrefsAsync(settings.DisabledMods, cancellationToken); }
+            catch (Exception ex) { _diagnostics.Warn("Mods", $"Failed to sync mod prefs to server: {ex.Message}"); }
+        }
+
+        var modList = await GetModsAsync(cancellationToken);
+        return new ModToggleResponseDto
+        {
+            Ok = true,
+            Message = enabled ? "Мод включён." : "Мод отключён. Изменения вступят в силу при следующем запуске игры.",
+            Mods = modList.Mods,
+        };
+    }
+
+    private async Task TryLoadModPrefsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prefs = await _authSessionService.GetPreferencesAsync(cancellationToken);
+            var settings = _settingsService.Load();
+            settings.DisabledMods = prefs.DisabledMods ?? new List<string>();
+            _settingsService.Save(settings);
+            _diagnostics.Info("Mods", $"Loaded {settings.DisabledMods.Count} disabled mod(s) from server.");
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Mods", $"Failed to load mod prefs from server: {ex.Message}");
+        }
+    }
+
+    private async Task RestoreConfigFilesAsync(CancellationToken cancellationToken)
+    {
+        foreach (var configPath in ConfigPathsToSync)
+        {
+            try
+            {
+                var fileDto = await _authSessionService.GetConfigFileAsync(configPath, cancellationToken);
+                if (!fileDto.Found || string.IsNullOrWhiteSpace(fileDto.ContentB64)) continue;
+
+                var localPath = System.IO.Path.Combine(
+                    _pathsService.GameDirectory,
+                    configPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+                var dir = System.IO.Path.GetDirectoryName(localPath);
+                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+                await File.WriteAllBytesAsync(localPath, Convert.FromBase64String(fileDto.ContentB64), cancellationToken);
+                _diagnostics.Info("Config", $"Restored per-account config: {configPath}");
+            }
+            catch (Exception ex)
+            {
+                _diagnostics.Warn("Config", $"Failed to restore config '{configPath}': {ex.Message}");
+            }
+        }
+    }
+
+    private async Task WatchGameAndUploadConfigsAsync(Process process)
+    {
+        try
+        {
+            await process.WaitForExitAsync();
+            _diagnostics.Info("Config", "Game exited. Uploading per-account config files...");
+
+            foreach (var configPath in ConfigPathsToSync)
+            {
+                var localPath = System.IO.Path.Combine(
+                    _pathsService.GameDirectory,
+                    configPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+                if (!File.Exists(localPath)) continue;
+
+                try
+                {
+                    var bytes = await File.ReadAllBytesAsync(localPath);
+                    var contentB64 = Convert.ToBase64String(bytes);
+                    if (contentB64.Length > 512 * 1024) continue;
+                    await _authSessionService.SaveConfigFileAsync(configPath, contentB64, CancellationToken.None);
+                    _diagnostics.Info("Config", $"Uploaded per-account config: {configPath}");
+                }
+                catch (Exception ex)
+                {
+                    _diagnostics.Warn("Config", $"Failed to upload config '{configPath}': {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _diagnostics.Warn("Config", $"Game watcher error: {ex.Message}");
+        }
     }
 
     private async Task<OperationResponseDto> RunExclusiveAsync(Func<Task<OperationResponseDto>> action)

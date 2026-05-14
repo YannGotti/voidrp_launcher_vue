@@ -198,6 +198,19 @@ public sealed class LauncherTokenEnvelope
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+public sealed class LauncherPreferencesDto
+{
+    [JsonPropertyName("disabled_mods")] public List<string> DisabledMods { get; set; } = new();
+    [JsonPropertyName("config_files")] public Dictionary<string, string> ConfigFiles { get; set; } = new();
+}
+
+public sealed class LauncherConfigFileDto
+{
+    [JsonPropertyName("path")] public string Path { get; set; } = string.Empty;
+    [JsonPropertyName("found")] public bool Found { get; set; }
+    [JsonPropertyName("content_b64")] public string? ContentB64 { get; set; }
+}
+
 
 
 

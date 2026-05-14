@@ -161,4 +161,32 @@ public sealed class SettingsUpdateDto
     public int MaxRamMb { get; set; }
 }
 
+public sealed class ModInfoDto
+{
+    public string Path { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public bool Optional { get; set; }
+    public bool Required { get; set; }
+    public bool Enabled { get; set; }
+}
+
+public sealed class ModListDto
+{
+    public List<ModInfoDto> Mods { get; set; } = new();
+}
+
+public sealed class ModToggleDto
+{
+    public string Path { get; set; } = string.Empty;
+    public bool Enabled { get; set; }
+}
+
+public sealed class ModToggleResponseDto
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public List<ModInfoDto> Mods { get; set; } = new();
+}
+
 

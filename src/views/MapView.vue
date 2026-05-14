@@ -65,6 +65,7 @@ function openInBrowser() {
         :src="MAP_URL"
         class="h-full w-full"
         style="height: 100%; width: 100%;"
+        webpreferences="webgl=yes, accelerated2dCanvas=yes"
         @did-finish-load="onLoad"
         @did-fail-load="onLoadFail"
       ></webview>

@@ -8,6 +8,7 @@ import SettingsView from '../views/SettingsView.vue'
 import LeaderboardView from '../views/LeaderboardView.vue'
 import GuideView from '../views/GuideView.vue'
 import MapView from '../views/MapView.vue'
+import ModsView from '../views/ModsView.vue'
 
 const routes = [
   {
@@ -23,6 +24,7 @@ const routes = [
       { path: 'nation', component: NationView },
       { path: 'account', component: AccountView },
       { path: 'settings', component: SettingsView },
+      { path: 'mods', component: ModsView },
       { path: 'leaderboard', component: LeaderboardView },
       { path: 'guide', component: GuideView },
       { path: 'map', component: MapView },

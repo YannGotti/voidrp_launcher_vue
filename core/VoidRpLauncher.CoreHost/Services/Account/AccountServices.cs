@@ -110,6 +110,48 @@ public sealed class LauncherAccountApiClient
         return await ReadJsonAsync<PlayerSkinOperationResponseDto>(response, cancellationToken);
     }
 
+    public async Task<LauncherPreferencesDto> GetPreferencesAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "launcher/me/prefs");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<LauncherPreferencesDto>(response, cancellationToken);
+    }
+
+    public async Task SaveModPrefsAsync(string accessToken, List<string> disabledMods, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, "launcher/me/prefs/mods");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = JsonContent.Create(new { disabled_mods = disabledMods }, options: JsonOptions);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(detail) ? $"SaveModPrefs failed: {(int)response.StatusCode}" : detail);
+        }
+    }
+
+    public async Task<LauncherConfigFileDto> GetConfigFileAsync(string accessToken, string path, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"launcher/me/prefs/config?path={Uri.EscapeDataString(path)}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<LauncherConfigFileDto>(response, cancellationToken);
+    }
+
+    public async Task SaveConfigFileAsync(string accessToken, string path, string contentB64, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, "launcher/me/prefs/config");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = JsonContent.Create(new { path, content_b64 = contentB64 }, options: JsonOptions);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(detail) ? $"SaveConfigFile failed: {(int)response.StatusCode}" : detail);
+        }
+    }
+
     private async Task<T> PostJsonAsync<T>(string url, object payload, CancellationToken cancellationToken)
     {
         using var response = await _httpClient.PostAsJsonAsync(url, payload, JsonOptions, cancellationToken);
@@ -352,6 +394,30 @@ public sealed class LauncherAuthSessionService
         return _snapshot.PlayerAccount.MinecraftNickname;
     }
 
+    public async Task<LauncherPreferencesDto> GetPreferencesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetPreferencesAsync(_snapshot.AccessToken, cancellationToken);
+    }
+
+    public async Task SaveModPrefsAsync(List<string> disabledMods, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        await _apiClient.SaveModPrefsAsync(_snapshot.AccessToken, disabledMods, cancellationToken);
+    }
+
+    public async Task<LauncherConfigFileDto> GetConfigFileAsync(string path, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.GetConfigFileAsync(_snapshot.AccessToken, path, cancellationToken);
+    }
+
+    public async Task SaveConfigFileAsync(string path, string contentB64, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        await _apiClient.SaveConfigFileAsync(_snapshot.AccessToken, path, contentB64, cancellationToken);
+    }
+
     private static LauncherAuthSnapshot ToSnapshot(TokenPairResponseDto payload)
         => new() { AccessToken = payload.AccessToken, RefreshToken = payload.RefreshToken, User = payload.User, PlayerAccount = payload.PlayerAccount, Security = new AccountSecurityReadDto() };
 }
@@ -375,7 +441,7 @@ public sealed class AuthenticatedLaunchService
         _diagnostics = diagnostics;
     }
 
-    public async Task LaunchAsync(LauncherManifest manifest, int maximumRamMb, IProgress<LaunchProgressInfo>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<System.Diagnostics.Process> LaunchAsync(LauncherManifest manifest, int maximumRamMb, IProgress<LaunchProgressInfo>? progress = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var nickname = _authSessionService.RequireMinecraftNickname();
@@ -388,9 +454,10 @@ public sealed class AuthenticatedLaunchService
         var launcherProof = LauncherProof.Compute(playTicket.Ticket);
         await _playTicketStore.SaveAsync(new LauncherPlayTicketEnvelope { Ticket = playTicket.Ticket, MinecraftNickname = playTicket.MinecraftNickname, ExpiresAtUtc = playTicket.ExpiresAt, Source = "VoidRP Launcher", LauncherProof = launcherProof }, cancellationToken);
         progress?.Report(new LaunchProgressInfo { Stage = "Авторизация", Details = $"Используем аккаунт {nickname}. Ticket сохранён во временный state-файл.", Percent = 15 });
-        await _localMinecraftLaunchService.LaunchAsync(nickname, manifest, maximumRamMb);
+        var process = await _localMinecraftLaunchService.LaunchAsync(nickname, manifest, maximumRamMb);
         progress?.Report(new LaunchProgressInfo { Stage = "Запуск", Details = "Minecraft запущен.", Percent = 100 });
         _diagnostics.Info("Launch", $"Minecraft launched for {nickname} with {maximumRamMb} MB RAM.");
+        return process;
     }
 }
 

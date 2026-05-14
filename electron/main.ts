@@ -1,4 +1,8 @@
 import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
+
+// Required for WebGL to work correctly in webview on all GPUs
+app.commandLine.appendSwitch('ignore-gpu-blacklist')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'

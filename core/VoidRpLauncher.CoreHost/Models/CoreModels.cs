@@ -27,6 +27,10 @@ public sealed class LauncherManifestFile
     public string Sha256 { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public bool AlwaysOverwrite { get; set; }
+    public bool Optional { get; set; }
+    public bool Required { get; set; }
+    public string DisplayName { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 }
 
 public sealed class LauncherServerInfo
@@ -79,6 +83,7 @@ public sealed class SyncProgressInfo
 public sealed class LauncherUserSettings
 {
     public int MaxRamMb { get; set; } = 4096;
+    public List<string> DisabledMods { get; set; } = new();
 }
 
 

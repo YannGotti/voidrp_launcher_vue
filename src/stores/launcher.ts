@@ -123,6 +123,25 @@ interface SkinOpResponse {
   skin: SkinState
 }
 
+interface ModInfo {
+  path: string
+  displayName: string
+  description: string
+  optional: boolean
+  required: boolean
+  enabled: boolean
+}
+
+interface ModListResponse {
+  mods: ModInfo[]
+}
+
+interface ModToggleResponse {
+  ok: boolean
+  message: string
+  mods: ModInfo[]
+}
+
 interface ToastItem {
   id: string
   tone: ToastTone
@@ -208,6 +227,7 @@ export const useLauncherStore = defineStore('launcher', () => {
   const state = reactive<LauncherState>(defaultState())
   const skin = reactive<SkinState>(defaultSkin())
   const toasts = reactive<ToastItem[]>([])
+  const mods = reactive<{ list: ModInfo[]; loading: boolean }>({ list: [], loading: false })
   let pollHandle: number | null = null
   let bootstrapPromise: Promise<void> | null = null
 
@@ -481,6 +501,38 @@ export const useLauncherStore = defineStore('launcher', () => {
     }
   }
 
+  async function getMods() {
+    mods.loading = true
+    try {
+      const response = await readJson<ModListResponse>('/api/mods')
+      mods.list.splice(0, mods.list.length, ...response.mods)
+    } catch (error: any) {
+      pushToast('error', 'Список модов недоступен', error?.message || 'Не удалось загрузить список модов.')
+    } finally {
+      mods.loading = false
+    }
+  }
+
+  async function toggleMod(path: string, enabled: boolean) {
+    try {
+      const response = await readJson<ModToggleResponse>('/api/mods/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, enabled }),
+      })
+      if (response.ok) {
+        mods.list.splice(0, mods.list.length, ...response.mods)
+        pushToast('success', enabled ? 'Мод включён' : 'Мод отключён', response.message || '')
+      } else {
+        pushToast('error', 'Не удалось изменить настройку', response.message || '')
+      }
+      return response
+    } catch (error: any) {
+      pushToast('error', 'Ошибка', error?.message || 'Не удалось изменить настройку мода.')
+      return null
+    }
+  }
+
   async function checkShellUpdates() {
     const desktop = (window as any)?.desktop
     if (desktop?.checkForShellUpdates) {
@@ -563,5 +615,8 @@ export const useLauncherStore = defineStore('launcher', () => {
     checkShellUpdates,
     installShellUpdate,
     openPath,
+    mods: computed(() => mods),
+    getMods,
+    toggleMod,
   }
 })

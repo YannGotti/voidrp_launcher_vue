@@ -13,6 +13,7 @@ const navItems = [
   { title: 'Карта', to: '/map' },
   { title: 'Гайд', to: '/guide' },
   { title: 'Аккаунт', to: '/account' },
+  { title: 'Моды', to: '/mods' },
   { title: 'Настройки', to: '/settings' }
 ]
 

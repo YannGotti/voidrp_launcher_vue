@@ -346,9 +346,12 @@ public sealed class FileSyncService
     }
 
     public Task SyncAsync(LauncherManifest manifest, IProgress<SyncProgressInfo>? progress = null, CancellationToken cancellationToken = default)
-        => SyncAsync(manifest, manifest.PackName, progress, cancellationToken);
+        => SyncAsync(manifest, manifest.PackName, null, progress, cancellationToken);
 
-    public async Task SyncAsync(LauncherManifest manifest, string syncKey, IProgress<SyncProgressInfo>? progress = null, CancellationToken cancellationToken = default)
+    public Task SyncAsync(LauncherManifest manifest, IReadOnlySet<string>? disabledOptionalMods, IProgress<SyncProgressInfo>? progress = null, CancellationToken cancellationToken = default)
+        => SyncAsync(manifest, manifest.PackName, disabledOptionalMods, progress, cancellationToken);
+
+    public async Task SyncAsync(LauncherManifest manifest, string syncKey, IReadOnlySet<string>? disabledOptionalMods, IProgress<SyncProgressInfo>? progress = null, CancellationToken cancellationToken = default)
     {
         if (manifest is null) throw new ArgumentNullException(nameof(manifest));
         if (string.IsNullOrWhiteSpace(syncKey)) throw new ArgumentException("Sync key is empty.", nameof(syncKey));
@@ -394,6 +397,27 @@ public sealed class FileSyncService
                 LocalPath = localPath,
                 SourceUrl = entry.Url
             });
+
+            // Skip disabled optional mods and delete local copy so Minecraft won't load them
+            if (entry.Optional && !entry.Required &&
+                disabledOptionalMods?.Contains(relativePath) == true)
+            {
+                await logWriter.WriteLineAsync($"[SKIP-DISABLED] {relativePath}");
+                if (File.Exists(localPath))
+                {
+                    try
+                    {
+                        File.Delete(localPath);
+                        DeleteEmptyParentDirectories(localPath, _pathsService.GameDirectory);
+                        await logWriter.WriteLineAsync($"[DELETE-DISABLED] {relativePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        await logWriter.WriteLineAsync($"[DELETE-DISABLED-FAILED] {relativePath} :: {ex.Message}");
+                    }
+                }
+                continue;
+            }
 
             var needsDownload = NeedsDownload(entry, localPath, relativePath);
             if (needsDownload)
