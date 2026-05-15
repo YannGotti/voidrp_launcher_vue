@@ -1,6 +1,6 @@
 {
   "name": "voidrp-electron-bridge",
-  "version": "3.8.7",
+  "version": "3.8.8",
   "description": "VoidRP Launcher ",
   "main": "dist-electron/main.js",
   "author": "mironoouv for VoidRP",

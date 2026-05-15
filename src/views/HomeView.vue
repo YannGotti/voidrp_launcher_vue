@@ -71,7 +71,7 @@ const stats = computed(() => [
         <span class="text-[10px] font-medium text-white/55">{{ launcher.playerStats.minecraftNickname || '—' }}</span>
       </div>
 
-      <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-300/70">VoidRP · Better MC 5</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-300/70">VoidRP · 1.21.1</p>
 
       <h2 class="mt-2 text-2xl font-bold leading-tight text-white">
         {{ launcher.isBusy ? 'Подготовка к запуску...' : 'Всё готово к запуску' }}
