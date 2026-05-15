@@ -189,4 +189,16 @@ public sealed class ModToggleResponseDto
     public List<ModInfoDto> Mods { get; set; } = new();
 }
 
+public sealed class ModSuggestionCommandDto
+{
+    public string Url { get; set; } = string.Empty;
+    public string? Comment { get; set; }
+}
+
+public sealed class ModSuggestionResponseDto
+{
+    public bool Ok { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
 

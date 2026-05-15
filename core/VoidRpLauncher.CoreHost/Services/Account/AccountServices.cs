@@ -118,6 +118,15 @@ public sealed class LauncherAccountApiClient
         return await ReadJsonAsync<LauncherPreferencesDto>(response, cancellationToken);
     }
 
+    public async Task<SimpleResponseDto> PostModSuggestionAsync(string accessToken, string url, string? comment, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "mod-suggestions/");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = JsonContent.Create(new { url, comment }, options: JsonOptions);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return await ReadJsonAsync<SimpleResponseDto>(response, cancellationToken);
+    }
+
     public async Task SaveModPrefsAsync(string accessToken, List<string> disabledMods, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Put, "launcher/me/prefs/mods");
@@ -374,6 +383,12 @@ public sealed class LauncherAuthSessionService
     {
         if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken) || string.IsNullOrWhiteSpace(_snapshot.RefreshToken)) throw new InvalidOperationException("Launcher user is not authenticated");
         return await _apiClient.RevokeOtherSessionsAsync(_snapshot.AccessToken, _snapshot.RefreshToken, cancellationToken);
+    }
+
+    public async Task<SimpleResponseDto> SuggestModAsync(string url, string? comment, CancellationToken cancellationToken = default)
+    {
+        if (_snapshot is null || string.IsNullOrWhiteSpace(_snapshot.AccessToken)) throw new InvalidOperationException("Launcher user is not authenticated");
+        return await _apiClient.PostModSuggestionAsync(_snapshot.AccessToken, url, comment, cancellationToken);
     }
 
     public async Task LogoutAsync(CancellationToken cancellationToken = default)

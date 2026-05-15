@@ -9,6 +9,7 @@ import LeaderboardView from '../views/LeaderboardView.vue'
 import GuideView from '../views/GuideView.vue'
 import MapView from '../views/MapView.vue'
 import ModsView from '../views/ModsView.vue'
+import SuggestModView from '../views/SuggestModView.vue'
 
 const routes = [
   {
@@ -25,6 +26,7 @@ const routes = [
       { path: 'account', component: AccountView },
       { path: 'settings', component: SettingsView },
       { path: 'mods', component: ModsView },
+      { path: 'suggest-mod', component: SuggestModView },
       { path: 'leaderboard', component: LeaderboardView },
       { path: 'guide', component: GuideView },
       { path: 'map', component: MapView },

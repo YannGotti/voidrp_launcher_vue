@@ -128,4 +128,17 @@ app.MapPost("/api/skin", async (HttpRequest request, LauncherFacadeService facad
 app.MapDelete("/api/skin", async (LauncherFacadeService facade) =>
     Results.Ok(await facade.DeleteSkinAsync(CancellationToken.None)));
 
+app.MapPost("/api/mod-suggestions", async (ModSuggestionCommandDto dto, LauncherAuthSessionService auth) =>
+{
+    try
+    {
+        var result = await auth.SuggestModAsync(dto.Url, dto.Comment, CancellationToken.None);
+        return Results.Ok(new ModSuggestionResponseDto { Ok = true, Message = result.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new ModSuggestionResponseDto { Ok = false, Message = ex.Message });
+    }
+});
+
 app.Run();

@@ -32,6 +32,11 @@ public sealed class RevokeSessionsResponseDto
     [JsonPropertyName("revoked_sessions")] public int RevokedSessions { get; set; }
 }
 
+public sealed class SimpleResponseDto
+{
+    [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+}
+
 public sealed class IssuePlayTicketRequestDto
 {
     [JsonPropertyName("launcher_version")] public string LauncherVersion { get; set; } = "unknown";
